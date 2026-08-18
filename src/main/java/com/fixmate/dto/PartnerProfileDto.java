@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -18,6 +19,10 @@ public class PartnerProfileDto {
     private Double hourlyRate;
     private List<String> skills;
     private boolean isAvailable;
+    private boolean isOnline;
+    private Double currentLatitude;
+    private Double currentLongitude;
+    private LocalDateTime lastLocationUpdate;
     private KycStatus kycStatus;
     private String kycDocumentRef;
     private Double smartServiceScore;

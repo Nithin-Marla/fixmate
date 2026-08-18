@@ -1,6 +1,8 @@
 package com.fixmate.service;
 
 import com.fixmate.dto.AdminDashboardDto;
+import com.fixmate.dto.PartnerProfileDto;
+import com.fixmate.entity.ServicePartnerProfile;
 import com.fixmate.entity.User;
 import com.fixmate.enums.BookingStatus;
 import com.fixmate.enums.KycStatus;
@@ -45,6 +47,48 @@ public class AdminService {
                 .completedBookings(completedBookings)
                 .emergencyBookings(emergencyBookings)
                 .totalRevenue(totalRevenue)
+                .build();
+    }
+
+    /**
+     * Production KYC review path: an admin approves or rejects a partner's KYC
+     * submission. In demo mode KYC auto-approves instead, but this endpoint
+     * remains the source of truth once {@code fixmate.demo-mode=false}.
+     */
+    public PartnerProfileDto reviewKyc(User admin, Long profileId, KycStatus status) {
+        if (admin.getRole() != Role.ROLE_ADMIN) {
+            throw new RuntimeException("Access Denied: Only administrators can review KYC.");
+        }
+        if (status != KycStatus.APPROVED && status != KycStatus.REJECTED) {
+            throw new RuntimeException("Invalid KYC review status. Use APPROVED or REJECTED.");
+        }
+
+        ServicePartnerProfile profile = partnerProfileRepository.findById(profileId)
+                .orElseThrow(() -> new RuntimeException("Partner profile not found."));
+
+        profile.setKycStatus(status);
+        if (status == KycStatus.REJECTED) {
+            profile.setAvailable(false);
+            profile.setOnline(false);
+            profile.setCurrentLatitude(null);
+            profile.setCurrentLongitude(null);
+        }
+
+        ServicePartnerProfile saved = partnerProfileRepository.save(profile);
+        return PartnerProfileDto.builder()
+                .id(saved.getId())
+                .experienceYears(saved.getExperienceYears())
+                .hourlyRate(saved.getHourlyRate())
+                .skills(saved.getSkills())
+                .isAvailable(saved.isAvailable())
+                .isOnline(saved.isOnline())
+                .currentLatitude(saved.getCurrentLatitude())
+                .currentLongitude(saved.getCurrentLongitude())
+                .lastLocationUpdate(saved.getLastLocationUpdate())
+                .kycStatus(saved.getKycStatus())
+                .kycDocumentRef(saved.getKycDocumentRef())
+                .smartServiceScore(saved.getSmartServiceScore())
+                .totalReviews(saved.getTotalReviews())
                 .build();
     }
 }

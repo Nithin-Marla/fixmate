@@ -28,6 +28,8 @@ public class AddressService {
                 .zipCode(request.getZipCode())
                 .country(request.getCountry())
                 .isDefault(request.isDefault())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .user(currentUser)
                 .build();
 
@@ -60,6 +62,8 @@ public class AddressService {
         address.setZipCode(request.getZipCode());
         address.setCountry(request.getCountry());
         address.setDefault(request.isDefault());
+        address.setLatitude(request.getLatitude());
+        address.setLongitude(request.getLongitude());
 
         Address updatedAddress = addressRepository.save(address);
         return mapToDto(updatedAddress);
@@ -95,6 +99,8 @@ public class AddressService {
                 .zipCode(address.getZipCode())
                 .country(address.getCountry())
                 .isDefault(address.isDefault())
+                .latitude(address.getLatitude())
+                .longitude(address.getLongitude())
                 .build();
     }
 }

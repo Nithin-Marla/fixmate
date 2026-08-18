@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -43,6 +44,20 @@ public class ServicePartnerProfile {
     @Builder.Default
     @Column(nullable = false)
     private boolean isAvailable = false;
+
+    /** Whether the partner is currently online / active on the app. */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean isOnline = false;
+
+    /** Partner's live latitude (updated periodically while online). */
+    private Double currentLatitude;
+
+    /** Partner's live longitude (updated periodically while online). */
+    private Double currentLongitude;
+
+    /** When the partner's live location was last updated. */
+    private LocalDateTime lastLocationUpdate;
 
     @Builder.Default
     @Column(nullable = false)

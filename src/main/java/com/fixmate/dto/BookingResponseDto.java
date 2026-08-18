@@ -23,4 +23,8 @@ public class BookingResponseDto {
     private Double totalAmount;
     private boolean isEmergency;
     private String notes;
+    private Double customerLatitude;
+    private Double customerLongitude;
+    private Double partnerLatitude;
+    private Double partnerLongitude;
 }

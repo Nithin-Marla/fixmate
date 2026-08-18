@@ -1,5 +1,6 @@
 package com.fixmate.dto;
 
+import com.fixmate.enums.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class NotificationDto {
     private Long id;
+    private NotificationType type;
+    private String title;
     private String message;
+    private Long bookingId;
     private boolean isRead;
     private LocalDateTime createdAt;
 }

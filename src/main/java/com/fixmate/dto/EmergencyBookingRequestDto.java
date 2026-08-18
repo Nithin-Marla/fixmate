@@ -13,4 +13,6 @@ public class EmergencyBookingRequestDto {
     private Long categoryId;
     private Long addressId;
     private String notes;
+    private Double customerLatitude;
+    private Double customerLongitude;
 }

@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthenticationResponse {
+    private Long id;
+    private String firstName;
+    private String lastName;
     private String token;
     private String email;
     private com.fixmate.enums.Role role;

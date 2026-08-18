@@ -1,5 +1,6 @@
 package com.fixmate.service;
 
+import com.fixmate.dto.PartnerProfileDetailsDto;
 import com.fixmate.dto.ReviewRequestDto;
 import com.fixmate.dto.ReviewResponseDto;
 import com.fixmate.entity.Booking;
@@ -12,9 +13,11 @@ import com.fixmate.repository.BookingRepository;
 import com.fixmate.repository.ReviewRepository;
 import com.fixmate.repository.ServicePartnerProfileRepository;
 import com.fixmate.repository.UserRepository;
+import com.fixmate.util.LocationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,6 +76,62 @@ public class ReviewService {
         return reviewRepository.findByPartner(partner).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Public profile for the customer's "View Profile" on a nearby partner
+     * card: the partner's basic info plus their actual review history and
+     * aggregated rating from the database. Optionally computes the straight-line
+     * distance when the customer's coordinates are supplied. Never exposes
+     * sensitive data (email, phone, documents).
+     */
+    public PartnerProfileDetailsDto getPartnerPublicProfile(Long userId, String categoryName,
+                                                            Double latitude, Double longitude) {
+        User partner = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Partner not found."));
+
+        ServicePartnerProfile profile = partnerProfileRepository.findByUser(partner)
+                .orElseThrow(() -> new RuntimeException("Partner profile not found."));
+
+        // The category the customer searched for; fall back to the partner's
+        // first registered skill if the search context is missing.
+        String serviceCategory = (categoryName != null && !categoryName.isBlank())
+                ? categoryName
+                : (profile.getSkills() != null && !profile.getSkills().isEmpty()
+                        ? profile.getSkills().get(0) : null);
+
+        Double distanceKm = null;
+        if (latitude != null && longitude != null
+                && profile.getCurrentLatitude() != null && profile.getCurrentLongitude() != null) {
+            distanceKm = Math.round(LocationUtils.calculateDistance(
+                    latitude, longitude, profile.getCurrentLatitude(), profile.getCurrentLongitude()) * 100.0) / 100.0;
+        }
+
+        // Newest reviews first (Review has no timestamp; id order reflects recency).
+        List<ReviewResponseDto> reviews = reviewRepository.findByPartner(partner).stream()
+                .sorted(Comparator.comparing(Review::getId).reversed())
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+
+        return PartnerProfileDetailsDto.builder()
+                .partnerProfileId(profile.getId())
+                .userId(userId)
+                .firstName(partner.getFirstName())
+                .lastName(partner.getLastName())
+                .name(partner.getFirstName() + " " + partner.getLastName())
+                .serviceCategory(serviceCategory)
+                .skills(profile.getSkills())
+                .experienceYears(profile.getExperienceYears())
+                .hourlyRate(profile.getHourlyRate())
+                .averageRating(profile.getSmartServiceScore())
+                .totalReviews(profile.getTotalReviews())
+                .kycStatus(profile.getKycStatus().name())
+                .available(profile.isAvailable())
+                .active(profile.isOnline())
+                .distanceKm(distanceKm)
+                .smartServiceScore(profile.getSmartServiceScore())
+                .reviews(reviews)
+                .build();
     }
 
     private void updateSmartServiceScore(User partner, Integer newRating) {

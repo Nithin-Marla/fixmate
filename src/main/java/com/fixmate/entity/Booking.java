@@ -51,6 +51,18 @@ public class Booking {
     @Column(nullable = false)
     private boolean isEmergency = false;
 
+    /** Customer's live latitude at the time of booking. */
+    private Double customerLatitude;
+
+    /** Customer's live longitude at the time of booking. */
+    private Double customerLongitude;
+
+    /** Partner's live latitude at the time of booking. */
+    private Double partnerLatitude;
+
+    /** Partner's live longitude at the time of booking. */
+    private Double partnerLongitude;
+
     @Column(length = 1000)
     private String notes;
 }

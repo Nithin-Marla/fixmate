@@ -1,0 +1,20 @@
+/* Notification dropdown panel (portaled to body) — visible scrollbar */
+.notification-panel {
+  scrollbar-width: thin;
+  scrollbar-color: #b9bccf #f4f5f9;
+}
+.notification-panel::-webkit-scrollbar {
+  width: 8px;
+}
+.notification-panel::-webkit-scrollbar-track {
+  background: #f4f5f9;
+  border-radius: 8px;
+}
+.notification-panel::-webkit-scrollbar-thumb {
+  background: #b9bccf;
+  border-radius: 8px;
+  border: 2px solid #f4f5f9;
+}
+.notification-panel::-webkit-scrollbar-thumb:hover {
+  background: #9397b4;
+}

@@ -21,6 +21,10 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthenticationResponse register(RegisterRequest request) {
+        if (repository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("An account with this email already exists.");
+        }
+
         var user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -30,12 +34,7 @@ public class AuthService {
                 .role(request.getRole())
                 .build();
         repository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .email(user.getEmail())
-                .role(user.getRole())
-                .build();
+        return buildResponse(user);
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
@@ -47,8 +46,15 @@ public class AuthService {
         );
         var user = repository.findByEmail(request.getEmail())
                 .orElseThrow();
+        return buildResponse(user);
+    }
+
+    private AuthenticationResponse buildResponse(User user) {
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .role(user.getRole())

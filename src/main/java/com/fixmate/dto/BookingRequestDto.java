@@ -17,4 +17,6 @@ public class BookingRequestDto {
     private Long addressId;
     private LocalDateTime scheduledDate;
     private String notes;
+    private Double customerLatitude;
+    private Double customerLongitude;
 }
