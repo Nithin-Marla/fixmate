@@ -1,18 +1,20 @@
-# Use a lightweight official Java 17 image
-FROM eclipse-temurin:17-jre-alpine
+# ---------- Build stage ----------
+FROM maven:3.9.9-eclipse-temurin-17 AS build
 
-# Maintainer info
-LABEL maintainer="fixmate@example.com"
-
-# Set a working directory inside the container
 WORKDIR /app
 
-# Copy the built jar file into the container
-# We assume the jar file is already built via 'mvn clean package'
-COPY target/fixmate-0.0.1-SNAPSHOT.jar app.jar
+COPY pom.xml .
+COPY src ./src
 
-# Expose port 8080 to the outside world
+RUN mvn clean package -DskipTests
+
+# ---------- Runtime stage ----------
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8081
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8081}"]
