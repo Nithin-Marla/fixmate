@@ -6,13 +6,13 @@ import com.fixmate.dto.RegisterRequest;
 import com.fixmate.entity.User;
 import com.fixmate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,6 @@ public class AuthService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
 
     /**
      * Additional validation rules that go beyond what Jakarta annotations
@@ -65,16 +64,27 @@ public class AuthService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        // The identifier can be an email or a phone number with country code.
-        // UserDetailsService (ApplicationConfig) resolves both.
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getIdentifier(), request.getPassword()
-                )
-        );
-        var user = repository.findByEmail(request.getIdentifier())
-                .or(() -> repository.findByPhone(request.getIdentifier()))
-                .orElseThrow();
+        String identifier = request.getIdentifier();
+        String rawPassword = request.getPassword();
+
+        if (identifier == null || identifier.isBlank() || rawPassword == null || rawPassword.isBlank()) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
+        // ── Resolve user: try email first, then phone ──────────────────────
+        Optional<User> userOpt = repository.findByEmail(identifier.trim());
+        if (userOpt.isEmpty()) {
+            userOpt = repository.findByPhone(identifier.trim());
+        }
+
+        User user = userOpt.orElseThrow(() ->
+                new BadCredentialsException("Invalid email or password"));
+
+        // ── Verify password (BCrypt) ───────────────────────────────────────
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
         return buildResponse(user);
     }
 
