@@ -1,0 +1,8 @@
+{
+  "firstName": "test",
+  "lastName": "user",
+  "email": "nithin@gmail.com",
+  "password": "password",
+  "phone": "0987654321",
+  "role": "ROLE_CUSTOMER"
+}
