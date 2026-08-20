@@ -9,8 +9,8 @@ start "Eureka Server (Port 8761)" cmd /c "cd /d %~dp0fixmate-eureka-server && ti
 :: Wait a few seconds to let Eureka initialize before starting backend
 timeout /t 5 /nobreak >nul
 
-echo [2/3] Starting FixMate Core Backend...
-start "FixMate Backend (Port 8081)" cmd /c "cd /d %~dp0fixmate-backend && title FixMate Backend && mvn spring-boot:run"
+echo [2/3] Starting FixMate Core Backend (with Local H2 Database)...
+start "FixMate Backend (Port 8081)" cmd /c "cd /d %~dp0fixmate-backend && title FixMate Backend && mvn spring-boot:run -Dspring-boot.run.profiles=local"
 
 :: Wait a few seconds
 timeout /t 5 /nobreak >nul
