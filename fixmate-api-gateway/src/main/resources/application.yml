@@ -1,6 +1,6 @@
 server:
   port: ${PORT:8080}
-  max-http-header-size: 64KB
+  max-http-header-size: 65536
 
 spring:
   application:
@@ -9,7 +9,7 @@ spring:
   cloud:
     gateway:
       httpclient:
-        max-header-size: 64KB
+        max-header-size: 65536
 
       discovery:
         locator:
