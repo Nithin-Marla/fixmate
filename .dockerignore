@@ -1,0 +1,12 @@
+.git
+.gitignore
+.mvn
+mvnw
+mvnw.cmd
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!target/*.jar
+Dockerfile
+docker-compose.yml
+.idea
+*.iml
