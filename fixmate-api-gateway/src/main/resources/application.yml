@@ -34,7 +34,7 @@ spring:
 
       routes:
         - id: fixmate-backend
-          uri: lb://FIXMATE-BACKEND
+          uri: ${BACKEND_URL:lb://FIXMATE-BACKEND}
           predicates:
             - Path=/api/v1/**,/v3/api-docs/**,/swagger-ui/**
           filters:
