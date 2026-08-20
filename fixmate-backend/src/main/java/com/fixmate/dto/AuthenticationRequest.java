@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthenticationRequest {
-    private String email;
+    /** Accepts either an email address or a full phone number with country code (e.g. +919440274562). */
+    private String identifier;
     private String password;
 }

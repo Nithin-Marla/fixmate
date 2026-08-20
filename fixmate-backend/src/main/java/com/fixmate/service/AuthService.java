@@ -65,12 +65,15 @@ public class AuthService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
+        // The identifier can be an email or a phone number with country code.
+        // UserDetailsService (ApplicationConfig) resolves both.
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(), request.getPassword()
+                        request.getIdentifier(), request.getPassword()
                 )
         );
-        var user = repository.findByEmail(request.getEmail())
+        var user = repository.findByEmail(request.getIdentifier())
+                .or(() -> repository.findByPhone(request.getIdentifier()))
                 .orElseThrow();
         return buildResponse(user);
     }

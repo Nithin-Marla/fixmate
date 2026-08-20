@@ -289,3 +289,44 @@
   display: block;
   margin-top: 0.3rem;
 }
+
+/* ============================================================
+   Login mode tabs — email / phone switcher
+   ============================================================ */
+
+.login-mode-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface-muted, #f3f4f6);
+  border-radius: var(--radius-md);
+  padding: 0.25rem;
+}
+
+.login-mode-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.login-mode-tab:hover:not(.login-mode-tab-active) {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.login-mode-tab-active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
