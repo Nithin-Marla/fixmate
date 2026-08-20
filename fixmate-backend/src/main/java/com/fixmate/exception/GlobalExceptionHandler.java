@@ -27,7 +27,17 @@ public class GlobalExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage())
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.success("Validation failed", errors)); // or we can use error() with null data, but returning the errors map is better
+                .body(ApiResponse.success("Validation failed", errors));
+    }
+
+    /**
+     * Catches business-level validation errors thrown as RuntimeException
+     * from service methods (e.g. Gmail-only check, special-char check).
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

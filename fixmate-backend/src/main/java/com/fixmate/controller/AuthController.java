@@ -5,6 +5,7 @@ import com.fixmate.dto.AuthenticationResponse;
 import com.fixmate.dto.RegisterRequest;
 import com.fixmate.response.ApiResponse;
 import com.fixmate.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +22,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> register(
-            @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request
     ) {
         AuthenticationResponse response = service.register(request);
         return ResponseEntity.ok(ApiResponse.success("User registered successfully", response));

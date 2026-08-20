@@ -11,6 +11,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -20,7 +23,31 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    /**
+     * Additional validation rules that go beyond what Jakarta annotations
+     * can express in the DTO.  Thrown before persisting so the Global
+     *ExceptionHandler can surface them as 400 responses.
+     */
     public AuthenticationResponse register(RegisterRequest request) {
+        // ── Business-level validation ────────────────────────────────────────
+        List<String> errors = new ArrayList<>();
+
+        // Gmail-only
+        if (request.getEmail() == null || !request.getEmail().toLowerCase().endsWith("@gmail.com")) {
+            errors.add("Please enter a valid Gmail address (example@gmail.com).");
+        }
+
+        // Password: at least one special character (annotation already
+        // enforces uppercase + min-length 8, but special char needs regex)
+        if (request.getPassword() != null && !request.getPassword().matches(".*[^A-Za-z0-9].*")) {
+            errors.add("Password must contain at least one special character.");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new RuntimeException(String.join(" ", errors));
+        }
+
+        // ── Duplicate check ──────────────────────────────────────────────────
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("An account with this email already exists.");
         }
@@ -40,8 +67,7 @@ public class AuthService {
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
+                        request.getEmail(), request.getPassword()
                 )
         );
         var user = repository.findByEmail(request.getEmail())

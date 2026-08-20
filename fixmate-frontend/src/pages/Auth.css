@@ -218,4 +218,74 @@
   .auth-shell {
     border-radius: var(--radius-xl);
   }
+  .phone-row {
+    flex-direction: column;
+  }
+  .phone-country,
+  .phone-number {
+    min-width: 100%;
+  }
+}
+
+/* ============================================================
+   Phone row — country selector + number side by side
+   ============================================================ */
+
+.phone-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.phone-country {
+  width: 200px;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.phone-number {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ============================================================
+   Password strength checklist
+   ============================================================ */
+
+.pw-checklist {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pw-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+}
+
+.pw-checklist li.pw-check-ok {
+  color: var(--success-dark, #059669);
+}
+
+.pw-check-icon {
+  font-weight: 700;
+  width: 0.9rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Inline field errors
+   ============================================================ */
+
+.form-error {
+  display: block;
+  margin-top: 0.3rem;
 }
