@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Wrench, LogOut, LayoutDashboard, User, Trash2, X } from 'lucide-react'
+import { Wrench, LogOut, LayoutDashboard, User, Trash2, X, Pencil, Check, RotateCcw } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import './Navbar.css'
 
@@ -22,6 +22,13 @@ export default function Navbar() {
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  // ── Email editing state ──────────────────────────────────────
+  const [emailEditing, setEmailEditing] = useState(false)
+  const [emailValue, setEmailValue] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [emailSuccess, setEmailSuccess] = useState('')
+  const [emailLoading, setEmailLoading] = useState(false)
 
   const menuRef = useRef(null)
 
@@ -50,6 +57,7 @@ export default function Navbar() {
   useEffect(() => {
     setMenuOpen(false)
     setDeleteOpen(false)
+    setEmailEditing(false)
   }, [location.pathname])
 
   const handleLogout = useCallback(() => {
@@ -59,6 +67,7 @@ export default function Navbar() {
     navigate('/login')
   }, [navigate])
 
+  // ── Delete account ───────────────────────────────────────────
   const openDelete = useCallback(() => {
     setDeleteEmail('')
     setDeletePassword('')
@@ -100,7 +109,6 @@ export default function Navbar() {
         setDeleteError(data.message || 'Account could not be deleted.')
         return
       }
-      // Success: clear everything and redirect
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       setDeleteOpen(false)
@@ -112,7 +120,86 @@ export default function Navbar() {
     }
   }, [deleteEmail, deletePassword, user, navigate])
 
+  // ── Email editing ────────────────────────────────────────────
+  const startEmailEdit = useCallback(() => {
+    setEmailValue(user?.email || '')
+    setEmailError('')
+    setEmailSuccess('')
+    setEmailEditing(true)
+  }, [user])
+
+  const cancelEmailEdit = useCallback(() => {
+    setEmailEditing(false)
+    setEmailError('')
+    setEmailSuccess('')
+  }, [])
+
+  const saveEmail = useCallback(async () => {
+    setEmailError('')
+    setEmailSuccess('')
+
+    const newEmail = emailValue.trim()
+
+    // Frontend validation
+    if (!newEmail) {
+      setEmailError('Email is required.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      setEmailError('Please enter a valid email address.')
+      return
+    }
+    if (!newEmail.toLowerCase().endsWith('@gmail.com')) {
+      setEmailError('Please enter a valid Gmail address.')
+      return
+    }
+    if (user && newEmail.toLowerCase() === user.email.toLowerCase()) {
+      setEmailError('This is already your current email address.')
+      return
+    }
+
+    setEmailLoading(true)
+    try {
+      const { data } = await fetchWithAuth('/user/email', {
+        method: 'PUT',
+        body: JSON.stringify({ email: newEmail }),
+      })
+      if (!data.success) {
+        setEmailError(data.message || 'Unable to update email. Please try again.')
+        return
+      }
+
+      // Backend returns a new AuthenticationResponse with a fresh JWT.
+      // Update localStorage so the app stays in sync.
+      const updated = data.data
+      if (updated?.token) {
+        localStorage.setItem('token', updated.token)
+      }
+      // Rebuild the user object with the new email (and any other updated fields)
+      const updatedUser = { ...user, email: updated.email, token: updated.token || user.token }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+
+      setEmailEditing(false)
+      setEmailSuccess('Email updated successfully.')
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setEmailSuccess(''), 3000)
+    } catch (err) {
+      setEmailError(err.message || 'Unable to update email. Please try again.')
+    } finally {
+      setEmailLoading(false)
+    }
+  }, [emailValue, user])
+
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
+
+  // ── Re-read user from localStorage after email update ────────
+  // (re-parse so the displayed email reflects the latest state)
+  const displayUser = (() => {
+    const freshStr = localStorage.getItem('user')
+    if (!freshStr) return user
+    try { return JSON.parse(freshStr) } catch { return user }
+  })()
 
   return (
     <>
@@ -164,14 +251,65 @@ export default function Navbar() {
                     <div className="profile-dropdown">
                       <div className="profile-dropdown-header">
                         <div className="profile-avatar">
-                          {user ? `${(user.firstName || '')[0] || ''}${(user.lastName || '')[0] || ''}`.toUpperCase() : '?'}
+                          {displayUser ? `${(displayUser.firstName || '')[0] || ''}${(displayUser.lastName || '')[0] || ''}`.toUpperCase() : '?'}
                         </div>
                         <div className="profile-info">
-                          <span className="profile-name">{user?.firstName} {user?.lastName}</span>
-                          <span className="profile-email">{user?.email}</span>
-                          {user?.phone && <span className="profile-phone">{user.phone}</span>}
+                          <span className="profile-name">{displayUser?.firstName} {displayUser?.lastName}</span>
+                          {displayUser?.phone && <span className="profile-phone">{displayUser.phone}</span>}
                           <span className="profile-role">{ROLE_LABELS[role] || 'User'}</span>
                         </div>
+                      </div>
+
+                      <div className="profile-dropdown-divider" />
+
+                      {/* ── Editable email row ─────────────────────── */}
+                      <div className="profile-email-row">
+                        {emailEditing ? (
+                          <div className="email-edit-wrap">
+                            <input
+                              type="text"
+                              className="form-input email-edit-input"
+                              value={emailValue}
+                              onChange={(e) => setEmailValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEmail()
+                                if (e.key === 'Escape') cancelEmailEdit()
+                              }}
+                              placeholder="newemail@gmail.com"
+                              autoFocus
+                            />
+                            <div className="email-edit-actions">
+                              <button
+                                className="email-edit-btn email-save"
+                                onClick={saveEmail}
+                                disabled={emailLoading}
+                                title="Save"
+                              >
+                                {emailLoading ? <RotateCcw size={13} className="spin" /> : <Check size={13} />}
+                              </button>
+                              <button
+                                className="email-edit-btn email-cancel"
+                                onClick={cancelEmailEdit}
+                                disabled={emailLoading}
+                                title="Cancel"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                            {emailError && <span className="email-edit-error">{emailError}</span>}
+                          </div>
+                        ) : (
+                          <div className="email-display-row">
+                            <span className="profile-email-label">Email</span>
+                            <span className="profile-email-value">{displayUser?.email}</span>
+                            <button className="email-edit-trigger" onClick={startEmailEdit} title="Edit email">
+                              <Pencil size={12} />
+                            </button>
+                          </div>
+                        )}
+                        {emailSuccess && !emailEditing && (
+                          <span className="email-edit-success">{emailSuccess}</span>
+                        )}
                       </div>
 
                       <div className="profile-dropdown-divider" />
@@ -218,7 +356,7 @@ export default function Navbar() {
                 <input
                   type="email"
                   className="form-input"
-                  placeholder={user?.email || 'your@gmail.com'}
+                  placeholder={displayUser?.email || 'your@gmail.com'}
                   value={deleteEmail}
                   onChange={(e) => setDeleteEmail(e.target.value)}
                   autoComplete="email"

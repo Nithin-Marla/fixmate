@@ -4,6 +4,7 @@ import com.fixmate.dto.AuthenticationRequest;
 import com.fixmate.dto.AuthenticationResponse;
 import com.fixmate.dto.DeleteAccountRequest;
 import com.fixmate.dto.RegisterRequest;
+import com.fixmate.dto.UpdateEmailRequest;
 import com.fixmate.entity.User;
 import com.fixmate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -98,6 +99,47 @@ public class AuthService {
     /** Return the currently-authenticated user's profile from the security context. */
     public AuthenticationResponse getProfile() {
         User user = getAuthenticatedUser();
+        return buildResponse(user);
+    }
+
+    /**
+     * Update the authenticated user's email address.
+     * Validates Gmail format and uniqueness, then issues a fresh JWT
+     * because the old token's subject (email) is now stale.
+     */
+    @Transactional
+    public AuthenticationResponse updateEmail(UpdateEmailRequest request) {
+        User user = getAuthenticatedUser();
+        String newEmail = request.getEmail();
+
+        // 1. Validate input
+        if (newEmail == null || newEmail.isBlank()) {
+            throw new RuntimeException("Email is required.");
+        }
+
+        newEmail = newEmail.trim().toLowerCase();
+
+        // 2. Gmail-only format check
+        if (!newEmail.endsWith("@gmail.com")) {
+            throw new RuntimeException("Please enter a valid Gmail address.");
+        }
+
+        // 3. Must be different from current email
+        if (newEmail.equalsIgnoreCase(user.getEmail())) {
+            throw new RuntimeException("This is already your current email address.");
+        }
+
+        // 4. Uniqueness check
+        if (repository.findByEmail(newEmail).isPresent()) {
+            throw new RuntimeException("This email is already registered.");
+        }
+
+        // 5. Update in database
+        user.setEmail(newEmail);
+        repository.save(user);
+
+        // 6. Reissue JWT — the old token's subject was the old email,
+        //    which no longer matches user.getUsername().
         return buildResponse(user);
     }
 
