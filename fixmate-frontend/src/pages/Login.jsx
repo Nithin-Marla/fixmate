@@ -55,7 +55,9 @@ export default function Login() {
 
       const { data } = await fetchWithAuth('/auth/authenticate', {
         method: 'POST',
-        body: JSON.stringify({ identifier, password }),
+        // Send both 'email' and 'identifier' for backward compatibility 
+        // with the production backend that hasn't been updated yet!
+        body: JSON.stringify({ identifier, email: identifier, password }),
       })
 
       if (!data.success) {
