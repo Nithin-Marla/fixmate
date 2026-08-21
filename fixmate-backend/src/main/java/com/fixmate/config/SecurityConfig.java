@@ -24,12 +24,11 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
+                // Public: login, register
                 .requestMatchers("/api/v1/auth/**").permitAll()
-                // SSE ticket GET: the unguessable stream id is the credential,
-                // because EventSource cannot send an Authorization header.
-                // The ticket-issuing POST /search/nearby/stream (no suffix) is
-                // still authenticated via the catch-all below.
+                // Public: SSE ticket GET (unguessable stream id is the credential)
                 .requestMatchers("/api/v1/search/nearby/stream/*").permitAll()
+                // All other /api/v1/** routes require a valid JWT
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess

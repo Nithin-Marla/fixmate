@@ -1,36 +1,36 @@
 package com.fixmate.controller;
 
-import com.fixmate.dto.UpdateProfileRequest;
-import com.fixmate.dto.UserProfileDto;
-import com.fixmate.entity.User;
+import com.fixmate.dto.AuthenticationResponse;
+import com.fixmate.dto.DeleteAccountRequest;
 import com.fixmate.response.ApiResponse;
-import com.fixmate.service.UserService;
+import com.fixmate.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1/user")
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    private final AuthService authService;
 
-    @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<UserProfileDto>> getProfile(
-            @AuthenticationPrincipal User currentUser
-    ) {
-        UserProfileDto profile = userService.getUserProfile(currentUser);
-        return ResponseEntity.ok(ApiResponse.success("User profile fetched successfully", profile));
+    /** Return the authenticated user's profile (from the JWT / security context). */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> getProfile() {
+        AuthenticationResponse profile = authService.getProfile();
+        return ResponseEntity.ok(ApiResponse.success("Profile loaded", profile));
     }
 
-    @PutMapping("/profile")
-    public ResponseEntity<ApiResponse<UserProfileDto>> updateProfile(
-            @AuthenticationPrincipal User currentUser,
-            @RequestBody UpdateProfileRequest request
+    /**
+     * Permanently delete the authenticated user's account.
+     * Requires email + password confirmation in the request body.
+     */
+    @DeleteMapping("/account")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @RequestBody DeleteAccountRequest request
     ) {
-        UserProfileDto updatedProfile = userService.updateUserProfile(currentUser, request);
-        return ResponseEntity.ok(ApiResponse.success("User profile updated successfully", updatedProfile));
+        authService.deleteAccount(request);
+        return ResponseEntity.ok(ApiResponse.success("Account deleted successfully", null));
     }
 }

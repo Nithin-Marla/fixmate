@@ -1,5 +1,6 @@
 package com.fixmate.dto;
 
+import com.fixmate.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,6 @@ public class AuthenticationResponse {
     private String lastName;
     private String token;
     private String email;
-    private com.fixmate.enums.Role role;
+    private String phone;
+    private Role role;
 }
