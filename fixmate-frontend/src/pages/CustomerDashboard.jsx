@@ -378,16 +378,22 @@ export default function CustomerDashboard() {
   const useMyLocationForAddress = async () => {
     setLocating(true);
     const res = await getBrowserPosition();
-    setLocating(false);
     if (res.success) {
+      const geo = await reverseGeocode(res.coords.latitude, res.coords.longitude);
       setAddressForm((prev) => ({
         ...prev,
-        latitude: res.coords.latitude.toFixed(6),
-        longitude: res.coords.longitude.toFixed(6)
+        street: geo.street || prev.street,
+        city: geo.city || prev.city,
+        state: geo.state || prev.state,
+        zipCode: geo.zipCode || prev.zipCode,
+        country: geo.country || prev.country,
+        latitude: String(res.coords.latitude),
+        longitude: String(res.coords.longitude)
       }));
     } else {
       setBookingError(res.error);
     }
+    setLocating(false);
   };
 
   const resolveLocation = () => {

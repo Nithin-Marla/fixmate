@@ -3,7 +3,7 @@
  * Converts latitude/longitude to a human-readable location name using
  * Nominatim (OpenStreetMap) — free, no API key required.
  *
- * Returns a location object: { name, formattedAddress, latitude, longitude }
+ * Returns a location object: { name, formattedAddress, latitude, longitude, street, city, state, zipCode, country }
  * Falls back gracefully to coordinates if geocoding fails.
  */
 
@@ -51,6 +51,19 @@ function buildSecondaryAddress(addr = {}) {
 }
 
 /**
+ * Extract structured address fields from Nominatim address object.
+ * Used to auto-fill address forms (street, city, state, zipCode, country).
+ */
+function buildAddressDetails(addr = {}) {
+  const street = [addr.house_number, addr.road || addr.pedestrian || addr.footway].filter(Boolean).join(' ')
+  const city = addr.city || addr.town || addr.village || addr.municipality || addr.county || ''
+  const state = addr.state || ''
+  const zipCode = addr.postcode || ''
+  const country = addr.country || ''
+  return { street, city, state, zipCode, country }
+}
+
+/**
  * Reverse-geocode latitude/longitude to a human-readable location name.
  *
  * @param {number} lat - Latitude
@@ -70,18 +83,26 @@ export async function reverseGeocode(lat, lon) {
     const name = buildDisplayName(addr, data.display_name)
     const secondary = buildSecondaryAddress(addr)
 
+    const details = buildAddressDetails(addr)
+
     return {
       latitude: lat,
       longitude: lon,
       name: name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
-      formattedAddress: secondary || data.display_name || null
+      formattedAddress: secondary || data.display_name || null,
+      ...details
     }
   } catch {
     return {
       latitude: lat,
       longitude: lon,
       name: `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
-      formattedAddress: null
+      formattedAddress: null,
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: ''
     }
   }
 }
