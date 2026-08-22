@@ -945,6 +945,28 @@ textarea.form-input {
   margin-bottom: 1.5rem;
 }
 
+.hero-search-container {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 680px;
+  position: relative;
+}
+
+.hero-search-container .smart-search-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-search-container .smart-search-wrapper .smart-search-dropdown {
+  max-width: 680px;
+}
+
+.hero-search-btn {
+  flex-shrink: 0;
+  height: 48px;
+  margin-top: 0;
+}
+
 .hero-search {
   display: flex;
   gap: 0.75rem;

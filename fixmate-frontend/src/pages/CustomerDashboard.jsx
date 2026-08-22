@@ -10,6 +10,7 @@ import Dropdown from '../components/Dropdown'
 import { getBrowserPosition, validateLocation } from '../utils/location'
 import LocationModal, { getStoredLocation, saveStoredLocation } from '../components/LocationModal'
 import { reverseGeocode } from '../utils/reverseGeocode'
+import SmartSearch from '../components/SmartSearch'
 import Modal from '../components/ui/Modal'
 import BookingTracking from '../components/BookingTracking'
 import Avatar from '../components/ui/Avatar'
@@ -733,14 +734,16 @@ export default function CustomerDashboard() {
             ? `Showing professionals near ${customerLocation.name}`
             : 'Set your location to find verified professionals near you'}
         </p>
-        <div className="hero-search">
-          <Search size={18} style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', flexShrink: 0 }} />
-          <input
-            value={heroFilter}
-            onChange={(e) => setHeroFilter(e.target.value)}
+        <div className="hero-search-container">
+          <SmartSearch
             placeholder="Search for plumbing, mechanic, electrician..."
+            onResultSelect={(entry, categoryName) => {
+              window.dispatchEvent(new CustomEvent('fixmate-search-select', {
+                detail: { entry, categoryName }
+              }))
+            }}
           />
-          <button type="button" className="btn btn-gradient" onClick={() => openBookingModal('scheduled')}>
+          <button type="button" className="btn btn-gradient hero-search-btn" onClick={() => openBookingModal('scheduled')}>
             Find Services
           </button>
         </div>
