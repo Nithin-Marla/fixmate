@@ -7,8 +7,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          lucide: ['lucide-react']
+        manualChunks(id) {
+          if (id.includes('lucide-react')) {
+            return 'lucide';
+          }
         }
       }
     }
