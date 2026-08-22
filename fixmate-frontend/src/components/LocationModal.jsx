@@ -71,7 +71,23 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
     }
   }, [open])
 
-  // Debounced search
+  // Debounced search — biased toward user's stored/current location
+  const nearbyRef = useRef(null)
+  useEffect(() => {
+    // Capture the user's location once when modal opens for nearby biasing
+    if (open) {
+      const stored = getStoredLocation()
+      if (stored?.latitude && stored?.longitude) {
+        nearbyRef.current = { lat: stored.latitude, lon: stored.longitude }
+      } else {
+        // Try to get browser location silently (non-blocking)
+        getBrowserPosition().then((res) => {
+          if (res.success) nearbyRef.current = { lat: res.coords.latitude, lon: res.coords.longitude }
+        })
+      }
+    }
+  }, [open])
+
   useEffect(() => {
     if (!query.trim()) { setSearchResults([]); return }
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
@@ -79,7 +95,7 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
       setSearching(true)
       setError('')
       try {
-        const results = await forwardGeocode(query.trim())
+        const results = await forwardGeocode(query.trim(), 6, nearbyRef.current)
         setSearchResults(results)
       } catch {
         setError('Unable to search locations. Please try again.')

@@ -109,17 +109,25 @@ export async function reverseGeocode(lat, lon) {
 
 /**
  * Forward-geocode a search query to location results via Nominatim.
- * Returns an array of { name, formattedAddress, latitude, longitude } objects.
+ * When nearLat/nearLon are provided, results are biased toward that area
+ * using a viewbox (~200 km radius) so users see nearby locations first.
  *
  * @param {string} query - Search query
- * @param {number} limit - Max results (default 5)
- * @returns {Promise<Array<{name: string, formattedAddress: string|null, latitude: number, longitude: number, raw: object}>>}
+ * @param {number} limit - Max results (default 6)
+ * @param {object} [nearby] - Optional { lat, lon } to bias results
+ * @returns {Promise<Array<{name: string, formattedAddress: string|null, latitude: number, longitude: number}>>}
  */
-export async function forwardGeocode(query, limit = 5) {
-  const res = await fetch(
-    `${NOMINATIM_BASE}/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=${limit}&addressdetails=1`,
-    { headers: { 'Accept-Language': 'en' } }
-  )
+export async function forwardGeocode(query, limit = 6, nearby = null) {
+  let url = `${NOMINATIM_BASE}/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=${limit}&addressdetails=1`
+
+  // Bias results toward the user's current/stored location (~200 km viewbox)
+  if (nearby && nearby.lat && nearby.lon) {
+    const r = 2 // ~2 degrees ≈ 200 km
+    url += `&viewbox=${(nearby.lon - r).toFixed(2)},${(nearby.lat - r).toFixed(2)},${(nearby.lon + r).toFixed(2)},${(nearby.lat + r).toFixed(2)}`
+    url += `&bounded=0` // 0 = prefer but don't restrict to viewbox
+  }
+
+  const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
   if (!res.ok) throw new Error('Search failed')
   const results = await res.json()
 
