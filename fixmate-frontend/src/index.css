@@ -894,7 +894,6 @@ textarea.form-input {
 
 .hero-section {
   position: relative;
-  overflow: hidden;
   padding: 2.5rem 2rem;
   margin-bottom: 1.5rem;
   color: #fff;
@@ -950,6 +949,7 @@ textarea.form-input {
   gap: 0.75rem;
   max-width: 680px;
   position: relative;
+  z-index: 10;
 }
 
 .hero-search-container .smart-search-wrapper {
