@@ -56,6 +56,10 @@ public class AuthService {
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("An account with this email already exists.");
         }
+        if (request.getPhone() != null && !request.getPhone().isBlank() &&
+                repository.findByPhone(request.getPhone().trim()).isPresent()) {
+            throw new RuntimeException("An account with this phone number already exists.");
+        }
 
         var user = User.builder()
                 .firstName(request.getFirstName().trim())
