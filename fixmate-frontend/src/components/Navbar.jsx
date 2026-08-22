@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Wrench, LogOut, LayoutDashboard, User, Trash2, X, Pencil, Check, RotateCcw, MapPin } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import LocationModal, { getStoredLocation, saveStoredLocation } from './LocationModal'
-import SmartSearch from './SmartSearch'
 import './Navbar.css'
 
 const ROLE_LABELS = {
@@ -270,17 +269,11 @@ export default function Navbar() {
                   </button>
                 )}
 
-                {/* ── Smart Search (customers on dashboard) ───────── */}
-                {role === 'ROLE_CUSTOMER' && location.pathname === '/customer/dashboard' && (
-                  <SmartSearch
-                    compact
-                    placeholder="Search for a service or problem..."
-                    onResultSelect={(entry, categoryName) => {
-                      window.dispatchEvent(new CustomEvent('fixmate-search-select', {
-                        detail: { entry, categoryName }
-                      }))
-                    }}
-                  />
+                {/* ── Greeting (customers on dashboard) ─────────── */}
+                {role === 'ROLE_CUSTOMER' && location.pathname === '/customer/dashboard' && displayUser?.firstName && (
+                  <span className="nav-greeting">
+                    Hello, {displayUser.firstName}
+                  </span>
                 )}
 
                 {/* ── Profile icon + dropdown ───────────────────────── */}
