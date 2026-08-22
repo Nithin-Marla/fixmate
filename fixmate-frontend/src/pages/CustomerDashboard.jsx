@@ -160,6 +160,35 @@ export default function CustomerDashboard() {
     }
   }, [])
 
+  // ── Listen for smart search selection from Navbar ──
+  useEffect(() => {
+    const handleSearchSelect = (e) => {
+      const { entry, categoryName } = e.detail
+      if (!entry) return
+
+      // Find the matching category from loaded categories
+      const matchCat = categories.find((c) =>
+        c.name.toLowerCase() === (categoryName || '').toLowerCase()
+      )
+
+      if (matchCat) {
+        // Open booking modal with this category pre-selected
+        openBookingModal('scheduled', String(matchCat.id))
+      } else if (categories.length === 0) {
+        // Categories not loaded yet — open modal anyway, they'll load on open
+        openBookingModal('scheduled')
+      } else {
+        // No matching category found — just open modal for user to pick
+        openBookingModal('scheduled')
+      }
+
+      // Clear the hero filter since user made a search
+      setHeroFilter('')
+    }
+    window.addEventListener('fixmate-search-select', handleSearchSelect)
+    return () => window.removeEventListener('fixmate-search-select', handleSearchSelect)
+  }, [categories, openBookingModal])
+
   useEffect(() => {
     loadBookings();
     loadCategories();

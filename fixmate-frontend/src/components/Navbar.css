@@ -152,6 +152,34 @@
   flex-shrink: 0;
 }
 
+/* ============================================================
+   Smart Search in navbar
+   ============================================================ */
+
+.navbar-nav .smart-search-compact {
+  max-width: 320px;
+}
+
+.navbar-nav .smart-search-compact .smart-search-bar {
+  border-radius: var(--radius-full);
+  padding: 0.35rem 0.65rem;
+}
+
+.navbar-nav .smart-search-compact .smart-search-input {
+  font-size: 0.8rem;
+}
+
+.navbar-nav .smart-search-compact .smart-search-dropdown {
+  min-width: 360px;
+  right: auto;
+}
+
+@media (max-width: 1200px) {
+  .navbar-nav .smart-search-compact {
+    max-width: 240px;
+  }
+}
+
 @media (min-width: 1100px) {
   .navbar-auth-badge { display: inline-flex; }
   .nav-role-chip { display: inline-block; }
