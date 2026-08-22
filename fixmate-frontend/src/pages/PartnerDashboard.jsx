@@ -338,17 +338,17 @@ export default function PartnerDashboard() {
     setLocating(true);
     setLocationMsg(null);
     const res = await getBrowserPosition();
-    setLocating(false);
     if (res.success) {
       setPendingLat(res.coords.latitude.toFixed(6));
       setPendingLon(res.coords.longitude.toFixed(6));
       setLocationMsg({
-        type: 'info',
-        text: `Coordinates found: ${res.coords.latitude.toFixed(6)}, ${res.coords.longitude.toFixed(6)} — click "Set Location" to save.`
+        type: 'success',
+        text: 'Location detected — click "Set Location" to save.'
       });
     } else {
       setLocationMsg({ type: 'error', text: res.error });
     }
+    setLocating(false);
   };
 
   const handleSetLocation = async () => {
@@ -368,7 +368,7 @@ export default function PartnerDashboard() {
       setStatusMsg('');
       setLocationMsg({
         type: 'success',
-        text: `Location set successfully\n📍 ${result.latitude.toFixed(4)}, ${result.longitude.toFixed(4)}`
+        text: 'Location saved successfully.'
       });
     }
   };
@@ -619,7 +619,7 @@ export default function PartnerDashboard() {
               </span>
               {liveCoords && (
                 <span className="text-secondary" style={{ fontSize: '0.8rem' }}>
-                  <MapPin size={12} style={{ display: 'inline', verticalAlign: '-1px' }} /> {liveCoords.latitude.toFixed(5)}, {liveCoords.longitude.toFixed(5)}
+                  <MapPin size={12} style={{ display: 'inline', verticalAlign: '-1px' }} /> Location set
                   {profile?.lastLocationUpdate && ` · updated ${new Date(profile.lastLocationUpdate).toLocaleTimeString()}`}
                 </span>
               )}
@@ -652,7 +652,7 @@ export default function PartnerDashboard() {
             <div className="form-label" style={{ marginBottom: 0 }}>Current Location</div>
             {liveCoords && (
               <span className="status-badge status-kyc">
-                <MapPin size={12} /> {liveCoords.latitude.toFixed(4)}, {liveCoords.longitude.toFixed(4)}
+                <MapPin size={12} /> Location confirmed
               </span>
             )}
           </div>

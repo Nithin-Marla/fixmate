@@ -3,12 +3,13 @@ import {
   MapPin, Search, Siren, CalendarDays, ChevronLeft, ChevronRight,
   Plus, Navigation, Star, ShieldCheck, X, Briefcase,
   CheckCircle2, User, Wallet, BadgeCheck, Clock, Zap, Users,
-  ChevronDown, RefreshCw
+  ChevronDown, RefreshCw, Loader2
 } from 'lucide-react'
 import { API_URL, fetchWithAuth } from '../api'
 import Dropdown from '../components/Dropdown'
 import { getBrowserPosition, validateLocation } from '../utils/location'
-import { getStoredLocation, saveStoredLocation } from '../components/LocationModal'
+import LocationModal, { getStoredLocation, saveStoredLocation } from '../components/LocationModal'
+import { reverseGeocode } from '../utils/reverseGeocode'
 import Modal from '../components/ui/Modal'
 import BookingTracking from '../components/BookingTracking'
 import Avatar from '../components/ui/Avatar'
@@ -76,6 +77,7 @@ export default function CustomerDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [bookingType, setBookingType] = useState('scheduled');
   const [bookingStep, setBookingStep] = useState(0);
+  const [bookingLocationModalOpen, setBookingLocationModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -308,20 +310,22 @@ export default function CustomerDashboard() {
     setLocating(true);
     setLocationMsg(null);
     const res = await getBrowserPosition();
-    setLocating(false);
     if (res.success) {
-      setPendingLat(res.coords.latitude.toFixed(6));
-      setPendingLon(res.coords.longitude.toFixed(6));
-      setLocationMsg({
-        type: 'info',
-        text: `Coordinates found: ${res.coords.latitude.toFixed(6)}, ${res.coords.longitude.toFixed(6)} — click "Set Location" to confirm.`
-      });
+      const geo = await reverseGeocode(res.coords.latitude, res.coords.longitude);
+      setPendingLat(String(res.coords.latitude));
+      setPendingLon(String(res.coords.longitude));
+      setConfirmedLocation({ latitude: res.coords.latitude, longitude: res.coords.longitude });
+      saveStoredLocation(geo);
+      setCustomerLocation(geo);
+      window.dispatchEvent(new CustomEvent('fixmate-location-changed', { detail: geo }));
+      setLocationMsg({ type: 'success', text: geo.name });
     } else {
       setLocationMsg({ type: 'error', text: res.error });
     }
+    setLocating(false);
   };
 
-  const handleSetLocation = () => {
+  const handleSetLocation = async () => {
     const result = validateLocation(pendingLat, pendingLon);
     if (result.error) {
       setLocationMsg({ type: 'error', text: result.error });
@@ -330,15 +334,11 @@ export default function CustomerDashboard() {
     setPendingLat(String(result.latitude));
     setPendingLon(String(result.longitude));
     setConfirmedLocation({ latitude: result.latitude, longitude: result.longitude });
-    // Also update the navbar location
-    const loc = { latitude: result.latitude, longitude: result.longitude, name: `${result.latitude.toFixed(4)}, ${result.longitude.toFixed(4)}` };
-    saveStoredLocation(loc);
-    setCustomerLocation(loc);
-    window.dispatchEvent(new CustomEvent('fixmate-location-changed', { detail: loc }));
-    setLocationMsg({
-      type: 'success',
-      text: `Location set successfully\n📍 ${result.latitude.toFixed(4)}, ${result.longitude.toFixed(4)}`
-    });
+    const geo = await reverseGeocode(result.latitude, result.longitude);
+    saveStoredLocation(geo);
+    setCustomerLocation(geo);
+    window.dispatchEvent(new CustomEvent('fixmate-location-changed', { detail: geo }));
+    setLocationMsg({ type: 'success', text: geo.name });
   };
 
   const openPartnerProfile = async (partner, e) => {
@@ -709,9 +709,9 @@ export default function CustomerDashboard() {
             <MapPin size={16} className="location-bar-icon" />
             <div className="location-bar-info">
               <span className="location-bar-name">{customerLocation.name}</span>
-              <span className="location-bar-coords">
-                {Number(customerLocation.latitude).toFixed(4)}, {Number(customerLocation.longitude).toFixed(4)}
-              </span>
+              {customerLocation.formattedAddress && (
+                <span className="location-bar-coords">{customerLocation.formattedAddress}</span>
+              )}
             </div>
           </div>
         </div>
@@ -725,7 +725,7 @@ export default function CustomerDashboard() {
         <p className="hero-subtitle">
           {customerLocation
             ? `Showing professionals near ${customerLocation.name}`
-            : 'Set your location to find verified local professionals near you'}
+            : 'Set your location to find verified professionals near you'}
         </p>
         <div className="hero-search">
           <Search size={18} style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', flexShrink: 0 }} />
@@ -985,38 +985,42 @@ export default function CustomerDashboard() {
             {bookingStep === 1 && (
               <div>
                 <div className="form-label">Your Location</div>
+                {confirmedLocation ? (
+                  <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '0.75rem', background: 'var(--surface-muted)' }}>
+                    <div className="flex items-center gap-3">
+                      <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: 'var(--radius-md)', background: 'var(--primary-soft)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <MapPin size={18} />
+                      </div>
+                      <div className="flex-1" style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{customerLocation?.name || 'Current location'}</div>
+                        {customerLocation?.formattedAddress && (
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{customerLocation.formattedAddress}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-secondary" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                    Set your location to find nearby professionals.
+                  </p>
+                )}
                 <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: '0.6rem' }}>
                   <button type="button" className="btn btn-outline btn-sm" onClick={useMyCurrentLocation} disabled={locating}>
-                    <Navigation size={14} /> {locating ? 'Getting location...' : 'Use my current location'}
+                    <Navigation size={14} /> {locating ? 'Detecting...' : 'Use my current location'}
                   </button>
-                  {confirmedLocation && (
-                    <span className="status-badge status-kyc">
-                      <MapPin size={12} /> {confirmedLocation.latitude.toFixed(4)}, {confirmedLocation.longitude.toFixed(4)}
-                    </span>
-                  )}
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLocationModalOpen(true)}>
+                    <MapPin size={14} /> Change Location
+                  </button>
                 </div>
-                <div className="form-row">
-                  <div className="form-group half-width">
-                    <label className="form-label">Latitude</label>
-                    <input
-                      type="number" step="any" className="form-input"
-                      value={pendingLat} onChange={(e) => setPendingLat(e.target.value)}
-                      placeholder="e.g. 17.4550"
-                    />
+                {locating && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+                    <Loader2 size={14} className="spin" /> Finding your location...
                   </div>
-                  <div className="form-group half-width">
-                    <label className="form-label">Longitude</label>
-                    <input
-                      type="number" step="any" className="form-input"
-                      value={pendingLon} onChange={(e) => setPendingLon(e.target.value)}
-                      placeholder="e.g. 78.3950"
-                    />
-                  </div>
-                </div>
+                )}
                 {locationMsg && (
                   <div
                     style={{
-                      fontSize: '0.8rem', whiteSpace: 'pre-line', marginBottom: '0.6rem',
+                      fontSize: '0.8rem', marginBottom: '0.6rem',
                       color: locationMsg.type === 'error' ? 'var(--danger)' : locationMsg.type === 'success' ? 'var(--success-dark)' : 'var(--text-secondary)'
                     }}
                   >
@@ -1024,9 +1028,6 @@ export default function CustomerDashboard() {
                     {locationMsg.text}
                   </div>
                 )}
-                <button type="button" className="btn btn-primary btn-block" style={{ marginBottom: '1.25rem' }} onClick={handleSetLocation}>
-                  <MapPin size={15} /> Set Location
-                </button>
 
                 <div className="form-group">
                   <label className="form-label">Address</label>
@@ -1069,16 +1070,8 @@ export default function CustomerDashboard() {
                           <input className="form-input" value={addressForm.zipCode} onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })} required />
                         </div>
                       </div>
-                      <div className="form-row">
-                        <div className="form-group half-width">
-                          <label className="form-label">Latitude</label>
-                          <input type="number" step="any" className="form-input" value={addressForm.latitude} onChange={(e) => setAddressForm({ ...addressForm, latitude: e.target.value })} placeholder="e.g. 17.3850" />
-                        </div>
-                        <div className="form-group half-width">
-                          <label className="form-label">Longitude</label>
-                          <input type="number" step="any" className="form-input" value={addressForm.longitude} onChange={(e) => setAddressForm({ ...addressForm, longitude: e.target.value })} placeholder="e.g. 78.4867" />
-                        </div>
-                      </div>
+                      <input type="hidden" value={addressForm.latitude} />
+                      <input type="hidden" value={addressForm.longitude} />
                       <button type="button" className="btn btn-outline btn-sm btn-block" onClick={useMyLocationForAddress} disabled={locating}>
                         <Navigation size={14} /> {locating ? 'Getting location...' : 'Use my current location'}
                       </button>
@@ -1454,6 +1447,24 @@ export default function CustomerDashboard() {
           }}
         />
       )}
+
+      {/* ============ Location Modal (for booking flow Change Location) ============ */}
+      <LocationModal
+        open={bookingLocationModalOpen}
+        onClose={() => setBookingLocationModalOpen(false)}
+        onSelect={(loc) => {
+          if (loc) {
+            setCustomerLocation(loc)
+            setConfirmedLocation({ latitude: loc.latitude, longitude: loc.longitude })
+            setPendingLat(String(loc.latitude))
+            setPendingLon(String(loc.longitude))
+            saveStoredLocation(loc)
+            window.dispatchEvent(new CustomEvent('fixmate-location-changed', { detail: loc }))
+          }
+          setBookingLocationModalOpen(false)
+        }}
+        currentLocation={customerLocation}
+      />
     </div>
   )
 }
