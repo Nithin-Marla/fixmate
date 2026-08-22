@@ -15,8 +15,8 @@ const TABS = [
   { id: 'audit', label: 'Audit Logs', icon: ScrollText },
 ]
 
-export default function AdminManagement() {
-  const [activeTab, setActiveTab] = useState('customers')
+export default function AdminManagement({ initialTab }) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'customers')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState([])
   const [error, setError] = useState('')

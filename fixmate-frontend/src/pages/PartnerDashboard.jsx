@@ -35,7 +35,7 @@ const NOTIFICATION_TYPE_ICONS = {
   BOOKING_REJECTED: X
 };
 
-export default function PartnerDashboard() {
+export default function PartnerDashboard({ activeSection, onSectionChange }) {
   const [user] = useState(() => JSON.parse(localStorage.getItem('user')));
   const [bookings, setBookings] = useState([]);
   const [profile, setProfile] = useState(null);

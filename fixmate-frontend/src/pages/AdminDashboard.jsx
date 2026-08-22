@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { Users, Briefcase, FileCheck2, CheckCircle2, Siren, IndianRupee, ShieldAlert, Settings } from 'lucide-react'
+import { Users, Briefcase, FileCheck2, CheckCircle2, Siren, IndianRupee, ShieldAlert, RefreshCw } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import StatCard from '../components/ui/StatCard'
 import AdminManagement from '../components/AdminManagement'
 import { SkeletonLine } from '../components/ui/Skeleton'
 import './Dashboard.css'
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ activeSection }) {
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [view, setView] = useState('overview') // 'overview' | 'management'
+
+  const isOverview = !activeSection || activeSection === 'overview'
 
   useEffect(() => { loadAnalytics() }, [])
 
@@ -29,37 +30,26 @@ export default function AdminDashboard() {
 
   const totalUsers = (analytics?.totalCustomers || 0) + (analytics?.totalServicePartners || 0)
 
+  // For management sections, pass the active section to AdminManagement
+  const mgmtTab = ['customers', 'partners', 'bookings', 'kyc', 'audit'].includes(activeSection) ? activeSection : null
+
   return (
-    <div className="container dashboard-container">
+    <div className="dashboard-container">
       <div className="page-header glass-panel">
         <div>
-          <h2>FixMate Admin</h2>
-          <p className="subtitle">Platform analytics & operations at a glance</p>
+          <h2>{isOverview ? 'Platform Overview' : 'Management Console'}</h2>
+          <p className="subtitle">{isOverview ? 'Analytics & operations at a glance' : 'Manage users, partners, and bookings'}</p>
         </div>
         <div className="page-header-actions">
-          <div className="admin-view-toggle">
-            <button
-              className={`btn btn-sm ${view === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setView('overview')}
-            >
-              Overview
-            </button>
-            <button
-              className={`btn btn-sm ${view === 'management' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setView('management')}
-            >
-              <Settings size={14} /> Manage
-            </button>
-          </div>
           {!loading && !error && (
             <button type="button" className="btn btn-outline btn-sm" onClick={loadAnalytics}>
-              Refresh
+              <RefreshCw size={14} /> Refresh
             </button>
           )}
         </div>
       </div>
 
-      {view === 'overview' ? (
+      {isOverview ? (
         loading ? (
           <div className="grid grid-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -160,7 +150,7 @@ export default function AdminDashboard() {
         )
       ) : (
         <div className="glass-panel" style={{ padding: '1.75rem 2rem' }}>
-          <AdminManagement />
+          <AdminManagement initialTab={mgmtTab} />
         </div>
       )}
     </div>

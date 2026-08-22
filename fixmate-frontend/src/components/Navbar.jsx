@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Wrench, LogOut, LayoutDashboard, User, Trash2, X, Pencil, Check, RotateCcw, MapPin } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import LocationModal, { getStoredLocation, saveStoredLocation } from './LocationModal'
+import ThemeToggle from './ui/ThemeToggle'
 import './Navbar.css'
 
 const ROLE_LABELS = {
@@ -275,6 +276,9 @@ export default function Navbar() {
                     Hello, {displayUser.firstName}
                   </span>
                 )}
+
+                {/* ── Theme toggle ──────────────────────────────────── */}
+                <ThemeToggle />
 
                 {/* ── Profile icon + dropdown ───────────────────────── */}
                 <div className="nav-profile-wrap" ref={menuRef}>
