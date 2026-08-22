@@ -215,7 +215,7 @@ export default function CustomerDashboard() {
     }
   };
 
-  const closeLiveStream = () => {
+  function closeLiveStream() {
     if (liveStreamRef.current) {
       liveStreamRef.current.close();
       liveStreamRef.current = null;
@@ -259,7 +259,7 @@ export default function CustomerDashboard() {
     }
   };
 
-  const resetBookingModal = () => {
+  function resetBookingModal() {
     closeLiveStream();
     setBookingError('');
     setBookingSuccess('');
@@ -279,7 +279,7 @@ export default function CustomerDashboard() {
     setBookingStep(0);
   };
 
-  const openBookingModal = async (type = 'scheduled', categoryId = '') => {
+  async function openBookingModal(type = 'scheduled', categoryId = '') {
     setBookingType(type);
     setShowModal(true);
     resetBookingModal();
