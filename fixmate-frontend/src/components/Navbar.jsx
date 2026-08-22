@@ -107,7 +107,7 @@ export default function Navbar() {
 
     setDeleteLoading(true)
     try {
-      const { data } = await fetchWithAuth('/user/account', {
+      const { data } = await fetchWithAuth('/auth/account', {
         method: 'DELETE',
         body: JSON.stringify({ email: deleteEmail.trim(), password: deletePassword }),
       })
@@ -166,7 +166,7 @@ export default function Navbar() {
 
     setEmailLoading(true)
     try {
-      const { data } = await fetchWithAuth('/user/email', {
+      const { data } = await fetchWithAuth('/auth/email', {
         method: 'PUT',
         body: JSON.stringify({ email: newEmail }),
       })

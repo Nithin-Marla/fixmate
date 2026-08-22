@@ -1157,7 +1157,6 @@ textarea.form-input { resize: vertical; min-height: 72px; }
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-xl);
-  overflow: hidden;
 }
 
 .hero-section::before {
