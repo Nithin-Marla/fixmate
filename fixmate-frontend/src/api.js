@@ -21,9 +21,10 @@ const parseBody = async (response) => {
 // dashboards share one implementation with proper error reporting.
 
 export const fetchWithAuth = async (endpoint, options = {}) => {
+  const isPublicRoute = endpoint.startsWith('/auth/');
   const headers = {
     'Content-Type': 'application/json',
-    ...getAuthHeaders(),
+    ...(isPublicRoute ? {} : getAuthHeaders()),
     ...options.headers,
   };
 
@@ -42,7 +43,7 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
   const data = await parseBody(response);
 
   // Token expired or invalid — clear session and send the user back to login.
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
