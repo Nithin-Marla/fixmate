@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   MapPin, Search, Siren, CalendarDays, ChevronLeft, ChevronRight,
   Plus, Navigation, Star, ShieldCheck, X, Briefcase,
-  CheckCircle2, User, Wallet, BadgeCheck
+  CheckCircle2, User, Wallet, BadgeCheck, Clock, Zap, Users,
+  ChevronDown, RefreshCw
 } from 'lucide-react'
 import { API_URL, fetchWithAuth } from '../api'
 import Dropdown from '../components/Dropdown'
 import { getBrowserPosition, validateLocation } from '../utils/location'
+import { getStoredLocation, saveStoredLocation } from '../components/LocationModal'
 import Modal from '../components/ui/Modal'
 import Avatar from '../components/ui/Avatar'
 import ServiceIcon from '../components/ui/ServiceIcon'
@@ -18,41 +20,60 @@ import { SkeletonList } from '../components/ui/Skeleton'
 import './Dashboard.css'
 
 const emptyAddress = {
-  street: '',
-  city: '',
-  state: '',
-  zipCode: '',
-  country: 'India',
-  latitude: '',
-  longitude: ''
+  street: '', city: '', state: '', zipCode: '', country: 'India',
+  latitude: '', longitude: ''
 };
 
 const BOOKING_STEPS = [
-  { label: 'Service' },
-  { label: 'Location' },
-  { label: 'Schedule' },
-  { label: 'Partners' },
-  { label: 'Confirm' }
+  { label: 'Service' }, { label: 'Location' }, { label: 'Schedule' },
+  { label: 'Partners' }, { label: 'Confirm' }
 ];
 
 const STATUS_PIPELINE = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED'];
 const PIPELINE_LABELS = {
-  PENDING: 'Request Sent',
-  ACCEPTED: 'Partner Accepted',
-  IN_PROGRESS: 'Service Started',
-  COMPLETED: 'Completed'
+  PENDING: 'Request Sent', ACCEPTED: 'Partner Accepted',
+  IN_PROGRESS: 'Service Started', COMPLETED: 'Completed'
 };
+
+/**
+ * Format a timestamp into a human-readable relative time string.
+ * e.g. "5 min ago", "2 hrs ago", "1 day ago"
+ */
+function formatLastActive(timestamp) {
+  if (!timestamp) return 'Unknown'
+  const diff = Date.now() - new Date(timestamp).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`
+  const days = Math.floor(hrs / 24)
+  return `${days} day${days === 1 ? '' : 's'} ago`
+}
+
+/**
+ * Format distance for display.
+ * < 1 km → "450 m", >= 1 km → "1.2 km"
+ */
+function formatDistance(km) {
+  if (km == null) return ''
+  if (km < 1) return `${Math.round(km * 1000)} m`
+  return `${Math.round(km * 10) / 10} km`
+}
 
 export default function CustomerDashboard() {
   const [user] = useState(() => JSON.parse(localStorage.getItem('user')));
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'warranty'
+  const [activeTab, setActiveTab] = useState('active');
   const [mobileNav, setMobileNav] = useState('home');
+
+  // ── Location state (synced with Navbar via localStorage + events) ──
+  const [customerLocation, setCustomerLocation] = useState(() => getStoredLocation());
 
   // New Booking State
   const [showModal, setShowModal] = useState(false);
-  const [bookingType, setBookingType] = useState('scheduled'); // 'scheduled' or 'emergency'
+  const [bookingType, setBookingType] = useState('scheduled');
   const [bookingStep, setBookingStep] = useState(0);
   const [categories, setCategories] = useState([]);
   const [addresses, setAddresses] = useState([]);
@@ -64,28 +85,27 @@ export default function CustomerDashboard() {
   const [addressForm, setAddressForm] = useState(emptyAddress);
   const [locating, setLocating] = useState(false);
   const [heroFilter, setHeroFilter] = useState('');
-  // Location flow: the coordinate fields hold PENDING values that only become
-  // the active location when the customer clicks "Set Location". Editing the
-  // fields never changes the active location by itself.
-  const [confirmedLocation, setConfirmedLocation] = useState(null); // { latitude, longitude } — active, used for searches
+  // Location flow
+  const [confirmedLocation, setConfirmedLocation] = useState(null);
   const [pendingLat, setPendingLat] = useState('');
   const [pendingLon, setPendingLon] = useState('');
-  const [locationMsg, setLocationMsg] = useState(null); // { type: 'success' | 'error' | 'info', text }
+  const [locationMsg, setLocationMsg] = useState(null);
 
-  // Search flow (search first, reveal partners only when found)
+  // Search flow
   const [searching, setSearching] = useState(false);
   const [foundPartners, setFoundPartners] = useState([]);
   const [liveStreamActive, setLiveStreamActive] = useState(false);
-  const liveStreamRef = useRef(null); // EventSource for live nearby updates
+  const liveStreamRef = useRef(null);
   const [searchEmpty, setSearchEmpty] = useState(false);
   const [searchEmptyMessage, setSearchEmptyMessage] = useState('');
-  const [lastSearchLocation, setLastSearchLocation] = useState(null); // coords used by the last nearby search
+  const [lastSearchLocation, setLastSearchLocation] = useState(null);
+  const [searchRadius, setSearchRadius] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [savingBooking, setSavingBooking] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
 
-  // View Profile: opens a modal with the partner's real profile from the backend.
+  // View Profile
   const [profilePartner, setProfilePartner] = useState(null);
   const [profileData, setProfileData] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -99,23 +119,57 @@ export default function CustomerDashboard() {
   const [comment, setComment] = useState('');
   const [savingReview, setSavingReview] = useState(false);
 
-  // Booking details modal (status pipeline)
+  // Booking details modal
   const [detailsBooking, setDetailsBooking] = useState(null);
 
   const bookingsRef = useRef(null);
 
+  // ── Listen for location changes from Navbar ──
+  useEffect(() => {
+    const handleLocationChange = (e) => {
+      const loc = e.detail
+      setCustomerLocation(loc)
+      // Also sync the confirmed location inside the modal
+      if (loc && loc.latitude && loc.longitude) {
+        setConfirmedLocation({ latitude: loc.latitude, longitude: loc.longitude })
+        setPendingLat(String(loc.latitude))
+        setPendingLon(String(loc.longitude))
+      }
+    }
+    const handleLocationCleared = () => {
+      setCustomerLocation(null)
+      setConfirmedLocation(null)
+      setPendingLat('')
+      setPendingLon('')
+    }
+    window.addEventListener('fixmate-location-changed', handleLocationChange)
+    window.addEventListener('fixmate-location-cleared', handleLocationCleared)
+    return () => {
+      window.removeEventListener('fixmate-location-changed', handleLocationChange)
+      window.removeEventListener('fixmate-location-cleared', handleLocationCleared)
+    }
+  }, [])
+
+  // ── Sync confirmed location from stored location on mount ──
+  useEffect(() => {
+    const stored = getStoredLocation()
+    if (stored && stored.latitude && stored.longitude) {
+      setConfirmedLocation({ latitude: stored.latitude, longitude: stored.longitude })
+      setPendingLat(String(stored.latitude))
+      setPendingLon(String(stored.longitude))
+    }
+  }, [])
+
   useEffect(() => {
     loadBookings();
     loadCategories();
-    return () => closeLiveStream(); // close the SSE stream when leaving the page
+    return () => closeLiveStream();
   }, []);
 
   const loadBookings = async () => {
     try {
       const { data } = await fetchWithAuth('/bookings/customer');
-      if (data.success) {
-        setBookings(data.data);
-      }
+      if (data.success) setBookings(data.data);
     } catch (err) {
       console.error('Failed to load bookings', err.message);
     } finally {
@@ -126,16 +180,12 @@ export default function CustomerDashboard() {
   const loadCategories = async () => {
     try {
       const { data } = await fetchWithAuth('/categories');
-      if (data.success && Array.isArray(data.data)) {
-        setCategories(data.data);
-      }
+      if (data.success && Array.isArray(data.data)) setCategories(data.data);
     } catch (err) {
       console.error('Failed to load categories', err.message);
     }
   };
 
-  // Closes the live SSE stream (called on modal close, re-search, category
-  // change, booking, and unmount).
   const closeLiveStream = () => {
     if (liveStreamRef.current) {
       liveStreamRef.current.close();
@@ -189,6 +239,7 @@ export default function CustomerDashboard() {
     setSearchEmpty(false);
     setSearchEmptyMessage('');
     setLastSearchLocation(null);
+    setSearchRadius(null);
     setSelectedPartner(null);
     setNotes('');
     setScheduledDate('');
@@ -211,8 +262,6 @@ export default function CustomerDashboard() {
       ]);
       if (cats.data.success) setCategories(cats.data.data);
       if (addrs.data.success) setAddresses(addrs.data.data);
-      // Prefill the pending coordinate fields with the current active location
-      // (if any) so the customer can see it — editing them does NOT change it.
       if (confirmedLocation) {
         setPendingLat(String(confirmedLocation.latitude));
         setPendingLon(String(confirmedLocation.longitude));
@@ -248,6 +297,11 @@ export default function CustomerDashboard() {
     setPendingLat(String(result.latitude));
     setPendingLon(String(result.longitude));
     setConfirmedLocation({ latitude: result.latitude, longitude: result.longitude });
+    // Also update the navbar location
+    const loc = { latitude: result.latitude, longitude: result.longitude, name: `${result.latitude.toFixed(4)}, ${result.longitude.toFixed(4)}` };
+    saveStoredLocation(loc);
+    setCustomerLocation(loc);
+    window.dispatchEvent(new CustomEvent('fixmate-location-changed', { detail: loc }));
     setLocationMsg({
       type: 'success',
       text: `Location set successfully\n📍 ${result.latitude.toFixed(4)}, ${result.longitude.toFixed(4)}`
@@ -272,11 +326,8 @@ export default function CustomerDashboard() {
       }
       const qs = params.toString();
       const { data } = await fetchWithAuth(`/partners/${partner.userId}/profile${qs ? `?${qs}` : ''}`);
-      if (data.success) {
-        setProfileData(data.data);
-      } else {
-        setProfileError(data.message || 'Unable to load partner profile. Please try again.');
-      }
+      if (data.success) setProfileData(data.data);
+      else setProfileError(data.message || 'Unable to load partner profile. Please try again.');
     } catch (err) {
       setProfileError(err.message || 'Unable to load partner profile. Please try again.');
     } finally {
@@ -311,7 +362,7 @@ export default function CustomerDashboard() {
     return null;
   };
 
-  // ----- Scheduled: find nearby partners (search animation, then reveal) -----
+  // ── Nearby partners search ──
   const handleFindPartners = async (e) => {
     e.preventDefault();
     setBookingError('');
@@ -319,6 +370,7 @@ export default function CustomerDashboard() {
     setFoundPartners([]);
     setSearchEmpty(false);
     setSelectedPartner(null);
+    setSearchRadius(null);
 
     const category = categories.find((c) => c.id === Number(selectedCategory));
     if (!category) {
@@ -339,15 +391,18 @@ export default function CustomerDashboard() {
       );
       if (data.success) {
         setFoundPartners(data.data);
+        // Determine the effective radius from the response
+        if (data.data.length > 0) {
+          const maxDist = Math.max(...data.data.map(p => p.distanceKm || 0));
+          setSearchRadius(Math.ceil(maxDist));
+        }
         if (data.data.length === 0) {
           setSearchEmpty(true);
           setSearchEmptyMessage(data.message || '');
         } else {
-          // Watch this search live: partners appear/disappear/move without
-          // the customer pressing the button again.
           openLiveStream(category.id, resolved.location);
         }
-        setBookingStep(3); // move to the Partners step
+        setBookingStep(3);
       } else {
         setBookingError(data.message || 'No nearby service partners available.');
       }
@@ -358,7 +413,7 @@ export default function CustomerDashboard() {
     }
   };
 
-  // ----- Create booking (both modes) -----
+  // ── Create booking ──
   const handleCreateBooking = async (partner) => {
     setBookingError('');
     setBookingSuccess('');
@@ -416,7 +471,6 @@ export default function CustomerDashboard() {
     }
   };
 
-  // ----- Emergency: search animation then auto-assign nearest -----
   const handleEmergencyBooking = async (e) => {
     e.preventDefault();
     setBookingError('');
@@ -463,7 +517,6 @@ export default function CustomerDashboard() {
         method: 'POST',
         body: JSON.stringify({ rating, comment })
       });
-
       if (data.success) {
         setShowReviewModal(false);
         setComment('');
@@ -482,7 +535,6 @@ export default function CustomerDashboard() {
 
   const activeBookings = bookings.filter((b) => b.status !== 'COMPLETED');
   const completedBookings = bookings.filter((b) => b.status === 'COMPLETED');
-
   const displayedBookings = activeTab === 'active' ? activeBookings : completedBookings;
 
   const filteredCategories = categories.filter((c) =>
@@ -493,15 +545,15 @@ export default function CustomerDashboard() {
     openBookingModal('scheduled', String(c.id));
   };
 
+  // ── Split partners into online and offline ──
+  const onlinePartners = foundPartners.filter((p) => p.active);
+  const offlinePartners = foundPartners.filter((p) => !p.active);
+
   const mobileNavigate = (id) => {
     setMobileNav(id);
-    if (id === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (id === 'bookings') {
-      bookingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (id === 'book') {
-      openBookingModal();
-    }
+    if (id === 'home') window.scrollTo({ top: 0, behavior: 'smooth' });
+    else if (id === 'bookings') bookingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else if (id === 'book') openBookingModal();
   };
 
   const goNext = () => {
@@ -526,21 +578,115 @@ export default function CustomerDashboard() {
     setBookingStep((s) => Math.max(s - 1, 0));
   };
 
-  // ---- Booking details pipeline modal ----
   const bookingPipelineIndex = (status) => {
     const idx = STATUS_PIPELINE.indexOf(status);
     return idx === -1 ? 0 : idx;
   };
 
+  // ── Enhanced partner card component ──
+  const renderPartnerCard = (p, isSelected, onSelect, isOffline = false) => (
+    <div
+      key={p.userId}
+      className={`partner-card ${isSelected ? 'partner-card-selected' : ''} ${isOffline ? 'partner-card-offline' : ''}`}
+      onClick={() => onSelect(p)}
+    >
+      {/* Status indicator dot */}
+      <div className={`partner-status-dot ${p.active ? 'partner-status-dot-online' : 'partner-status-dot-offline'}`} />
+
+      <Avatar name={`${p.firstName || ''} ${p.lastName || ''}`} size="lg" />
+      <div className="partner-card-info">
+        <div className="partner-card-name">
+          {p.firstName} {p.lastName}
+          {p.kycStatus === 'APPROVED' && (
+            <BadgeCheck size={16} className="verified-badge" aria-label="KYC verified" />
+          )}
+          {p.smartServiceScore != null && (
+            <span className="rating-pill">
+              <Star size={12} /> {Number(p.smartServiceScore).toFixed(1)}
+            </span>
+          )}
+        </div>
+
+        <div className="partner-card-meta">
+          <span className="partner-meta-item">
+            <MapPin size={12} /> {formatDistance(p.distanceKm)}
+          </span>
+          {p.hourlyRate != null && (
+            <span className="partner-meta-item">
+              ₹{p.hourlyRate}/hr
+            </span>
+          )}
+          {p.totalBookings > 0 && (
+            <span className="partner-meta-item">
+              <Briefcase size={12} /> {p.totalBookings} jobs
+            </span>
+          )}
+          {p.experienceYears ? (
+            <span className="partner-meta-item">
+              {p.experienceYears}yr{p.experienceYears === 1 ? '' : 's'} exp
+            </span>
+          ) : null}
+        </div>
+
+        <div className="partner-card-badges">
+          {p.active ? (
+            <span className="status-badge status-online">
+              <span className="dot dot-green" /> {p.available ? 'Available Now' : 'Online'}
+            </span>
+          ) : (
+            <span className="status-badge status-offline">
+              <span className="dot dot-gray" /> Last active {formatLastActive(p.lastLocationUpdate)}
+            </span>
+          )}
+          {p.serviceCategory && <span className="status-badge status-pending">{p.serviceCategory}</span>}
+          {p.kycStatus === 'APPROVED' && <span className="status-badge status-kyc">KYC ✓</span>}
+        </div>
+      </div>
+      <div className="partner-card-actions">
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={(e) => openPartnerProfile(p, e)}
+        >
+          <User size={14} /> View Profile
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={(e) => { e.stopPropagation(); setSelectedPartner(p); setBookingStep(4); }}
+        >
+          Select <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="container dashboard-container">
+      {/* ============ Location bar (sub-header) ============ */}
+      {customerLocation && (
+        <div className="location-bar glass-panel">
+          <div className="location-bar-content">
+            <MapPin size={16} className="location-bar-icon" />
+            <div className="location-bar-info">
+              <span className="location-bar-name">{customerLocation.name}</span>
+              <span className="location-bar-coords">
+                {Number(customerLocation.latitude).toFixed(4)}, {Number(customerLocation.longitude).toFixed(4)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ============ Hero ============ */}
       <section className="hero-section">
         <h1 className="hero-title">
           {user?.firstName ? `What do you need help with, ${user.firstName}?` : 'What do you need help with?'}
         </h1>
         <p className="hero-subtitle">
-          Find verified local professionals near you — book in minutes.
+          {customerLocation
+            ? `Showing professionals near ${customerLocation.name}`
+            : 'Set your location to find verified local professionals near you'}
         </p>
         <div className="hero-search">
           <Search size={18} style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', flexShrink: 0 }} />
@@ -817,22 +963,16 @@ export default function CustomerDashboard() {
                   <div className="form-group half-width">
                     <label className="form-label">Latitude</label>
                     <input
-                      type="number"
-                      step="any"
-                      className="form-input"
-                      value={pendingLat}
-                      onChange={(e) => setPendingLat(e.target.value)}
+                      type="number" step="any" className="form-input"
+                      value={pendingLat} onChange={(e) => setPendingLat(e.target.value)}
                       placeholder="e.g. 17.4550"
                     />
                   </div>
                   <div className="form-group half-width">
                     <label className="form-label">Longitude</label>
                     <input
-                      type="number"
-                      step="any"
-                      className="form-input"
-                      value={pendingLon}
-                      onChange={(e) => setPendingLon(e.target.value)}
+                      type="number" step="any" className="form-input"
+                      value={pendingLon} onChange={(e) => setPendingLon(e.target.value)}
                       placeholder="e.g. 78.3950"
                     />
                   </div>
@@ -840,9 +980,7 @@ export default function CustomerDashboard() {
                 {locationMsg && (
                   <div
                     style={{
-                      fontSize: '0.8rem',
-                      whiteSpace: 'pre-line',
-                      marginBottom: '0.6rem',
+                      fontSize: '0.8rem', whiteSpace: 'pre-line', marginBottom: '0.6rem',
                       color: locationMsg.type === 'error' ? 'var(--danger)' : locationMsg.type === 'success' ? 'var(--success-dark)' : 'var(--text-secondary)'
                     }}
                   >
@@ -948,20 +1086,16 @@ export default function CustomerDashboard() {
                 <div className="form-group">
                   <label className="form-label">Scheduled Date & Time</label>
                   <input
-                    type="datetime-local"
-                    className="form-input"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
+                    type="datetime-local" className="form-input"
+                    value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
                   />
                   <p className="form-hint">Choose a convenient slot for the service.</p>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Describe what you need</label>
                   <textarea
-                    className="form-input"
-                    rows="3"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    className="form-input" rows="3"
+                    value={notes} onChange={(e) => setNotes(e.target.value)}
                     placeholder="E.g., Kitchen sink is leaking and the tap needs replacing..."
                   />
                 </div>
@@ -974,7 +1108,7 @@ export default function CustomerDashboard() {
               </div>
             )}
 
-            {/* STEP 3 — Partners */}
+            {/* STEP 3 — Partners (ONLINE / OFFLINE split) */}
             {bookingStep === 3 && bookingType === 'scheduled' && (
               <div>
                 <div className="section-head">
@@ -984,7 +1118,7 @@ export default function CustomerDashboard() {
                       {liveStreamActive && <span className="status-badge status-live">🟢 LIVE</span>}
                     </div>
                     <p className="text-secondary" style={{ fontSize: '0.8rem' }}>
-                      Sorted by distance from your location{liveStreamActive ? ' · updates automatically as partners move or change status' : ''}.
+                      Sorted by distance from your location{liveStreamActive ? ' · updates automatically' : ''}
                     </p>
                   </div>
                 </div>
@@ -1009,62 +1143,41 @@ export default function CustomerDashboard() {
                   </div>
                 ) : (
                   <>
-                    {foundPartners.map((p) => (
-                      <div
-                        key={p.userId}
-                        className={`partner-card ${selectedPartner?.userId === p.userId ? 'partner-card-selected' : ''}`}
-                        onClick={() => setSelectedPartner(p)}
-                      >
-                        <Avatar name={`${p.firstName || ''} ${p.lastName || ''}`} size="lg" />
-                        <div className="partner-card-info">
-                          <div className="partner-card-name">
-                            {p.firstName} {p.lastName}
-                            {p.kycStatus === 'APPROVED' && (
-                              <BadgeCheck size={16} className="verified-badge" aria-label="KYC verified" />
-                            )}
-                            {p.smartServiceScore != null && (
-                              <span className="rating-pill">
-                                <Star size={12} /> {Number(p.smartServiceScore).toFixed(1)}
-                              </span>
-                            )}
+                    {/* ONLINE NOW section */}
+                    {onlinePartners.length > 0 && (
+                      <div className="partner-section">
+                        <div className="partner-section-header">
+                          <div className="partner-section-label">
+                            <span className="dot dot-green" /> ONLINE NOW
                           </div>
-                          <div className="partner-card-meta">
-                            <MapPin size={12} style={{ display: 'inline', verticalAlign: '-1px' }} /> {p.distanceKm} km away · ₹{p.hourlyRate ?? 0}/hr
-                            {p.experienceYears ? ` · ${p.experienceYears} yr${p.experienceYears === 1 ? '' : 's'} exp` : ''}
-                          </div>
-                          <div className="partner-card-badges">
-                            <span className="status-badge status-online">
-                              <span className="dot dot-green" /> {p.active ? 'ONLINE' : 'OFFLINE'}
-                            </span>
-                            {p.available && <span className="status-badge status-accepted">AVAILABLE</span>}
-                            {p.serviceCategory && <span className="status-badge status-pending">{p.serviceCategory}</span>}
-                            {p.kycStatus === 'APPROVED' && <span className="status-badge status-kyc">KYC ✓</span>}
-                          </div>
+                          <span className="partner-section-count">{onlinePartners.length}</span>
                         </div>
-                        <div className="partner-card-actions">
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={(e) => openPartnerProfile(p, e)}
-                          >
-                            <User size={14} /> View Profile
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={(e) => { e.stopPropagation(); setSelectedPartner(p); setBookingStep(4); }}
-                          >
-                            Select <ChevronRight size={14} />
-                          </button>
-                        </div>
+                        {onlinePartners.map((p) =>
+                          renderPartnerCard(p, selectedPartner?.userId === p.userId, (partner) => setSelectedPartner(partner), false)
+                        )}
                       </div>
-                    ))}
+                    )}
+
+                    {/* OFFLINE section */}
+                    {offlinePartners.length > 0 && (
+                      <div className="partner-section">
+                        <div className="partner-section-header">
+                          <div className="partner-section-label">
+                            <span className="dot dot-gray" /> OFFLINE
+                          </div>
+                          <span className="partner-section-count">{offlinePartners.length}</span>
+                        </div>
+                        {offlinePartners.map((p) =>
+                          renderPartnerCard(p, selectedPartner?.userId === p.userId, (partner) => setSelectedPartner(partner), true)
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-between" style={{ marginTop: '0.75rem' }}>
                       <button type="button" className="btn btn-ghost btn-sm" onClick={goBack}><ChevronLeft size={14} /> Back</button>
                       <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() => { closeLiveStream(); setFoundPartners([]); setSelectedPartner(null); setBookingStep(2); }}
+                        type="button" className="btn btn-outline btn-sm"
+                        onClick={() => { closeLiveStream(); setFoundPartners([]); setSelectedPartner(null); setSearchRadius(null); setBookingStep(2); }}
                       >
                         ↺ Search again
                       </button>
@@ -1083,7 +1196,7 @@ export default function CustomerDashboard() {
                     <div className="flex-1">
                       <div style={{ fontWeight: 700 }}>{selectedPartner.firstName} {selectedPartner.lastName}</div>
                       <div className="text-secondary" style={{ fontSize: '0.8rem' }}>
-                        <MapPin size={12} style={{ display: 'inline', verticalAlign: '-1px' }} /> {selectedPartner.distanceKm} km away · ₹{selectedPartner.hourlyRate ?? 0}/hr
+                        <MapPin size={12} style={{ display: 'inline', verticalAlign: '-1px' }} /> {formatDistance(selectedPartner.distanceKm)} · ₹{selectedPartner.hourlyRate ?? 0}/hr
                       </div>
                     </div>
                     <span className="status-badge status-online"><span className="dot dot-green" /> {selectedPartner.active ? 'ONLINE' : 'OFFLINE'}</span>
@@ -1114,13 +1227,9 @@ export default function CustomerDashboard() {
                   <button type="button" className="btn btn-outline" onClick={() => setBookingStep(3)}><ChevronLeft size={16} /> Back</button>
                   <button type="button" className="btn btn-gradient btn-lg" onClick={() => handleCreateBooking(selectedPartner)} disabled={savingBooking}>
                     {savingBooking ? (
-                      <>
-                        <span className="spinner spinner-light" /> Creating Booking...
-                      </>
+                      <><span className="spinner spinner-light" /> Creating Booking...</>
                     ) : (
-                      <>
-                        <CheckCircle2 size={17} /> Confirm & Book
-                      </>
+                      <><CheckCircle2 size={17} /> Confirm & Book</>
                     )}
                   </button>
                 </div>
@@ -1283,10 +1392,8 @@ export default function CustomerDashboard() {
           <div className="form-group">
             <label className="form-label">Comments</label>
             <textarea
-              className="form-input"
-              rows="3"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              className="form-input" rows="3"
+              value={comment} onChange={(e) => setComment(e.target.value)}
               placeholder="How was the service? What went well?"
               required
             />

@@ -4,6 +4,8 @@ import com.fixmate.dto.NearbyPartnerDto;
 import com.fixmate.dto.PartnerSearchResultDto;
 import com.fixmate.entity.ServiceCategory;
 import com.fixmate.entity.ServicePartnerProfile;
+import com.fixmate.enums.BookingStatus;
+import com.fixmate.repository.BookingRepository;
 import com.fixmate.repository.ServiceCategoryRepository;
 import com.fixmate.repository.ServicePartnerProfileRepository;
 import com.fixmate.util.LocationUtils;
@@ -23,6 +25,7 @@ public class SearchService {
 
     private final ServicePartnerProfileRepository profileRepository;
     private final ServiceCategoryRepository categoryRepository;
+    private final BookingRepository bookingRepository;
 
     @Value("${fixmate.nearby-search.initial-radius-km:5}")
     private double initialRadiusKm;
@@ -147,6 +150,9 @@ public class SearchService {
     }
 
     private NearbyPartnerDto mapToNearbyDto(ServicePartnerProfile profile, double distanceKm, String categoryName) {
+        long totalBookings = bookingRepository.countByPartnerAndStatus(
+                profile.getUser(), BookingStatus.COMPLETED);
+
         return NearbyPartnerDto.builder()
                 .partnerProfileId(profile.getId())
                 .userId(profile.getUser().getId())
@@ -161,6 +167,8 @@ public class SearchService {
                 .available(profile.isAvailable())
                 .active(profile.isOnline())
                 .kycStatus(profile.getKycStatus().name())
+                .totalBookings(totalBookings)
+                .lastLocationUpdate(profile.getLastLocationUpdate())
                 .build();
     }
 }

@@ -21,4 +21,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT SUM(b.totalAmount) FROM Booking b WHERE b.status = :status")
     Double sumTotalAmountByStatus(@Param("status") BookingStatus status);
+
+    long countByPartnerAndStatus(User partner, BookingStatus status);
 }

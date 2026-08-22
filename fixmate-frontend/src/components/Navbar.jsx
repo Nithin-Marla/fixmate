@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Wrench, LogOut, LayoutDashboard, User, Trash2, X, Pencil, Check, RotateCcw } from 'lucide-react'
+import { Wrench, LogOut, LayoutDashboard, User, Trash2, X, Pencil, Check, RotateCcw, MapPin } from 'lucide-react'
 import { fetchWithAuth } from '../api'
+import LocationModal, { getStoredLocation, saveStoredLocation } from './LocationModal'
 import './Navbar.css'
 
 const ROLE_LABELS = {
@@ -29,6 +30,10 @@ export default function Navbar() {
   const [emailError, setEmailError] = useState('')
   const [emailSuccess, setEmailSuccess] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
+
+  // ── Location selector state ──────────────────────────────────
+  const [locationModalOpen, setLocationModalOpen] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState(() => getStoredLocation())
 
   const menuRef = useRef(null)
 
@@ -191,6 +196,19 @@ export default function Navbar() {
     }
   }, [emailValue, user])
 
+  // Location selection handler
+  const handleLocationSelect = useCallback((loc) => {
+    setSelectedLocation(loc)
+    if (loc) {
+      saveStoredLocation(loc)
+    } else {
+      // Dispatch a custom event so the CustomerDashboard can react
+      window.dispatchEvent(new Event('fixmate-location-cleared'))
+    }
+    // Dispatch event so CustomerDashboard can react to location change
+    window.dispatchEvent(new CustomEvent('fixmate-location-changed', { detail: loc }))
+  }, [])
+
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
 
   // ── Re-read user from localStorage after email update ────────
@@ -234,6 +252,21 @@ export default function Navbar() {
                   <Link to="/admin/dashboard" className="nav-link nav-link-with-icon">
                     <LayoutDashboard size={15} /> Dashboard
                   </Link>
+                )}
+
+                {/* ── Location selector (customers only) ────────────── */}
+                {role === 'ROLE_CUSTOMER' && location.pathname === '/customer/dashboard' && (
+                  <button
+                    className="nav-location-btn"
+                    onClick={() => setLocationModalOpen(true)}
+                    title="Select your location"
+                  >
+                    <MapPin size={15} />
+                    <span className="nav-location-text">
+                      {selectedLocation ? selectedLocation.name : 'Set location'}
+                    </span>
+                    <span className="nav-location-chevron">▾</span>
+                  </button>
                 )}
 
                 {/* ── Profile icon + dropdown ───────────────────────── */}
@@ -396,6 +429,13 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      {/* ── Location Modal ──────────────────────────────────────── */}
+      <LocationModal
+        open={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelect={handleLocationSelect}
+        currentLocation={selectedLocation}
+      />
     </>
   )
 }

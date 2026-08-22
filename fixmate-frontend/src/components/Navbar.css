@@ -110,6 +110,48 @@
   border: 1px solid #a7f3d0;
 }
 
+/* ============================================================
+   Location selector button
+   ============================================================ */
+
+.nav-location-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-location-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.nav-location-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-location-chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 @media (min-width: 1100px) {
   .navbar-auth-badge { display: inline-flex; }
   .nav-role-chip { display: inline-block; }
@@ -120,6 +162,8 @@
   .navbar-nav { gap: 0.6rem; }
   .nav-link-with-icon span { display: none; }
   .nav-logout span { display: none; }
+  .nav-location-text { display: none; }
+  .nav-location-btn { padding: 0.35rem; max-width: unset; }
 }
 
 /* ============================================================

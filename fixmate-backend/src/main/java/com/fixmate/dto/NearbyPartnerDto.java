@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -37,4 +38,10 @@ public class NearbyPartnerDto {
 
     /** The partner's KYC status (always APPROVED for eligible results). */
     private String kycStatus;
+
+    /** Total completed bookings for this partner. */
+    private Long totalBookings;
+
+    /** When the partner's location was last updated. */
+    private LocalDateTime lastLocationUpdate;
 }
