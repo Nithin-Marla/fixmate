@@ -160,6 +160,9 @@ export default function CustomerDashboard() {
     }
   }, [])
 
+  // ── Ref to hold latest openBookingModal (avoids TDZ in minified builds) ──
+  const openBookingModalRef = useRef(null);
+
   // ── Listen for smart search selection from Navbar ──
   useEffect(() => {
     const handleSearchSelect = (e) => {
@@ -171,15 +174,12 @@ export default function CustomerDashboard() {
         c.name.toLowerCase() === (categoryName || '').toLowerCase()
       )
 
-      if (matchCat) {
-        // Open booking modal with this category pre-selected
-        openBookingModal('scheduled', String(matchCat.id))
-      } else if (categories.length === 0) {
-        // Categories not loaded yet — open modal anyway, they'll load on open
-        openBookingModal('scheduled')
-      } else {
-        // No matching category found — just open modal for user to pick
-        openBookingModal('scheduled')
+      if (openBookingModalRef.current) {
+        if (matchCat) {
+          openBookingModalRef.current('scheduled', String(matchCat.id))
+        } else {
+          openBookingModalRef.current('scheduled')
+        }
       }
 
       // Clear the hero filter since user made a search
@@ -187,7 +187,7 @@ export default function CustomerDashboard() {
     }
     window.addEventListener('fixmate-search-select', handleSearchSelect)
     return () => window.removeEventListener('fixmate-search-select', handleSearchSelect)
-  }, [categories, openBookingModal])
+  }, [categories])
 
   useEffect(() => {
     loadBookings();
@@ -299,6 +299,9 @@ export default function CustomerDashboard() {
       setBookingError(err.message);
     }
   };
+
+  // Keep the ref pointing to the latest openBookingModal
+  openBookingModalRef.current = openBookingModal;
 
   const useMyCurrentLocation = async () => {
     setLocating(true);
