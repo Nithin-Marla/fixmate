@@ -363,6 +363,14 @@ img {
   background: var(--success-dark);
 }
 
+.btn-info {
+  background: var(--info);
+  color: #fff;
+}
+.btn-info:hover:not(:disabled) {
+  background: var(--info-dark);
+}
+
 .btn-sm {
   padding: 0.375rem 0.75rem;
   font-size: 0.78rem;

@@ -1,7 +1,7 @@
 package com.fixmate.controller;
 
-import com.fixmate.dto.AdminDashboardDto;
-import com.fixmate.dto.PartnerProfileDto;
+import com.fixmate.dto.*;
+import com.fixmate.entity.AuditLog;
 import com.fixmate.entity.User;
 import com.fixmate.enums.KycStatus;
 import com.fixmate.response.ApiResponse;
@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -26,10 +28,6 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Admin Dashboard metrics fetched successfully", analytics));
     }
 
-    /**
-     * Approves or rejects a service partner's KYC submission.
-     * Production path — in demo mode KYC auto-approves on submission.
-     */
     @PatchMapping("/kyc/{profileId}")
     public ResponseEntity<ApiResponse<PartnerProfileDto>> reviewKyc(
             @AuthenticationPrincipal User admin,
@@ -38,5 +36,47 @@ public class AdminController {
     ) {
         PartnerProfileDto profile = adminService.reviewKyc(admin, profileId, status);
         return ResponseEntity.ok(ApiResponse.success("KYC status updated to " + status, profile));
+    }
+
+    @GetMapping("/customers")
+    public ResponseEntity<ApiResponse<List<AdminUserDto>>> listCustomers(
+            @AuthenticationPrincipal User admin
+    ) {
+        List<AdminUserDto> customers = adminService.listCustomers();
+        return ResponseEntity.ok(ApiResponse.success("Customers fetched successfully", customers));
+    }
+
+    @GetMapping("/partners")
+    public ResponseEntity<ApiResponse<List<AdminUserDto>>> listPartners(
+            @AuthenticationPrincipal User admin
+    ) {
+        List<AdminUserDto> partners = adminService.listPartners();
+        return ResponseEntity.ok(ApiResponse.success("Partners fetched successfully", partners));
+    }
+
+    @GetMapping("/kyc/pending")
+    public ResponseEntity<ApiResponse<List<AdminUserDto>>> listPendingKyc(
+            @AuthenticationPrincipal User admin
+    ) {
+        List<AdminUserDto> pending = adminService.listPendingKyc();
+        return ResponseEntity.ok(ApiResponse.success("Pending KYC submissions fetched", pending));
+    }
+
+    @GetMapping("/bookings")
+    public ResponseEntity<ApiResponse<List<AdminBookingDto>>> listBookings(
+            @AuthenticationPrincipal User admin
+    ) {
+        List<AdminBookingDto> bookings = adminService.listBookings();
+        return ResponseEntity.ok(ApiResponse.success("Bookings fetched successfully", bookings));
+    }
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<ApiResponse<List<AuditLog>>> getAuditLogs(
+            @AuthenticationPrincipal User admin,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        List<AuditLog> logs = adminService.getAuditLogs(page, size);
+        return ResponseEntity.ok(ApiResponse.success("Audit logs fetched", logs));
     }
 }

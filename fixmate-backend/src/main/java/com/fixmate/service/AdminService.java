@@ -1,7 +1,6 @@
 package com.fixmate.service;
 
-import com.fixmate.dto.AdminDashboardDto;
-import com.fixmate.dto.PartnerProfileDto;
+import com.fixmate.dto.*;
 import com.fixmate.entity.ServicePartnerProfile;
 import com.fixmate.entity.User;
 import com.fixmate.enums.BookingStatus;
@@ -13,6 +12,9 @@ import com.fixmate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -20,6 +22,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final ServicePartnerProfileRepository partnerProfileRepository;
+    private final AuditLogService auditLogService;
 
     public AdminDashboardDto getDashboardAnalytics(User admin) {
         if (admin.getRole() != Role.ROLE_ADMIN) {
@@ -35,9 +38,7 @@ public class AdminService {
         long emergencyBookings = bookingRepository.countByIsEmergencyTrue();
 
         Double totalRevenue = bookingRepository.sumTotalAmountByStatus(BookingStatus.COMPLETED);
-        if (totalRevenue == null) {
-            totalRevenue = 0.0;
-        }
+        if (totalRevenue == null) totalRevenue = 0.0;
 
         return AdminDashboardDto.builder()
                 .totalCustomers(totalCustomers)
@@ -50,11 +51,6 @@ public class AdminService {
                 .build();
     }
 
-    /**
-     * Production KYC review path: an admin approves or rejects a partner's KYC
-     * submission. In demo mode KYC auto-approves instead, but this endpoint
-     * remains the source of truth once {@code fixmate.demo-mode=false}.
-     */
     public PartnerProfileDto reviewKyc(User admin, Long profileId, KycStatus status) {
         if (admin.getRole() != Role.ROLE_ADMIN) {
             throw new RuntimeException("Access Denied: Only administrators can review KYC.");
@@ -75,6 +71,12 @@ public class AdminService {
         }
 
         ServicePartnerProfile saved = partnerProfileRepository.save(profile);
+
+        auditLogService.log("KYC_REVIEWED", "PartnerProfile", saved.getId(),
+                "KYC " + status.name() + " for " + saved.getUser().getFirstName()
+                        + " " + saved.getUser().getLastName(),
+                admin);
+
         return PartnerProfileDto.builder()
                 .id(saved.getId())
                 .experienceYears(saved.getExperienceYears())
@@ -90,5 +92,84 @@ public class AdminService {
                 .smartServiceScore(saved.getSmartServiceScore())
                 .totalReviews(saved.getTotalReviews())
                 .build();
+    }
+
+    /**
+     * List all customers for admin management.
+     */
+    public List<AdminUserDto> listCustomers() {
+        return userRepository.findByRole(Role.ROLE_CUSTOMER).stream()
+                .map(this::mapToUserDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * List all service partners for admin management.
+     */
+    public List<AdminUserDto> listPartners() {
+        return userRepository.findByRole(Role.ROLE_SERVICE_PARTNER).stream()
+                .map(this::mapToUserDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * List all pending KYC submissions for admin review.
+     */
+    public List<AdminUserDto> listPendingKyc() {
+        return partnerProfileRepository.findByKycStatus(KycStatus.PENDING).stream()
+                .map(profile -> mapToUserDto(profile.getUser()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * List all bookings for admin management.
+     */
+    public List<AdminBookingDto> listBookings() {
+        return bookingRepository.findAll().stream()
+                .map(booking -> AdminBookingDto.builder()
+                        .id(booking.getId())
+                        .customerName(booking.getCustomer().getFirstName() + " " + booking.getCustomer().getLastName())
+                        .customerId(booking.getCustomer().getId())
+                        .partnerName(booking.getPartner().getFirstName() + " " + booking.getPartner().getLastName())
+                        .partnerId(booking.getPartner().getId())
+                        .categoryName(booking.getCategory().getName())
+                        .status(booking.getStatus().name())
+                        .totalAmount(booking.getTotalAmount())
+                        .isEmergency(booking.isEmergency())
+                        .scheduledDate(booking.getScheduledDate())
+                        .createdAt(booking.getCreatedAt())
+                        .completedAt(booking.getCompletedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get recent audit logs.
+     */
+    public List<com.fixmate.entity.AuditLog> getAuditLogs(int page, int size) {
+        return auditLogService.getRecentLogs(page, size).getContent();
+    }
+
+    private AdminUserDto mapToUserDto(User user) {
+        AdminUserDto.AdminUserDtoBuilder b = AdminUserDto.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .role(user.getRole().name())
+                .createdAt(null); // User entity doesn't have createdAt yet
+
+        // For partners, add KYC and profile info
+        if (user.getRole() == Role.ROLE_SERVICE_PARTNER) {
+            var profile = partnerProfileRepository.findByUser(user);
+            if (profile.isPresent()) {
+                b.kycStatus(profile.get().getKycStatus().name())
+                  .isOnline(profile.get().isOnline())
+                  .averageRating(profile.get().getSmartServiceScore());
+            }
+        }
+
+        return b.build();
     }
 }

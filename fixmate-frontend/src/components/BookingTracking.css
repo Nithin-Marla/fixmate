@@ -1,0 +1,353 @@
+/* ============================================================
+   Booking Tracking Modal
+   ============================================================ */
+
+.booking-tracking-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1.5rem;
+  animation: fadeIn 0.18s ease;
+}
+
+.booking-tracking-modal {
+  width: 100%;
+  max-width: 580px;
+  margin: auto;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+/* ── Header ── */
+.bt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bt-booking-id {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.bt-category {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Timeline ── */
+.bt-timeline {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.bt-timeline-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  position: relative;
+}
+
+.bt-timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  width: 2px;
+  height: calc(100% - 8px);
+  background: var(--border);
+}
+
+.bt-timeline-step.done::after {
+  background: var(--success);
+}
+
+.bt-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface);
+  z-index: 1;
+  transition: all 0.2s ease;
+}
+
+.bt-timeline-step.done .bt-step-dot {
+  border-color: var(--success);
+  background: var(--success);
+  color: #fff;
+}
+
+.bt-timeline-step.active .bt-step-dot {
+  border-width: 3px;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+
+.bt-step-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.bt-step-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.bt-timeline-step.active .bt-step-label {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.bt-timeline-step.done .bt-step-label {
+  color: var(--success-dark);
+}
+
+/* ── Cancelled Banner ── */
+.bt-cancelled-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0.5rem 1.5rem 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--danger-light);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  color: var(--danger-dark);
+}
+
+.bt-cancelled-banner strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.bt-cancelled-banner p {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* ── Details ── */
+.bt-details {
+  padding: 0 1.5rem 1rem;
+}
+
+.bt-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+
+.bt-detail-row:last-child {
+  border-bottom: none;
+}
+
+.bt-detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.bt-detail-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.bt-amount {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.bt-notes {
+  font-style: italic;
+  color: var(--text-secondary);
+  max-width: 60%;
+}
+
+/* ── Payment Section ── */
+.bt-payment-section {
+  margin: 0 1.5rem 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-muted);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.bt-payment-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.bt-payment-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.bt-payment-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.bt-payment-row.bt-total {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.bt-payment-row.bt-discount span:last-child {
+  color: var(--success-dark);
+}
+
+.bt-invoice-num {
+  font-family: 'SF Mono', monospace;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* ── Actions ── */
+.bt-actions {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0 1.5rem 1.25rem;
+  flex-wrap: wrap;
+}
+
+/* ── Sub-modals (cancel, reschedule, pay, review) ── */
+.bt-submodal {
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.15s ease;
+}
+
+.bt-submodal-content {
+  width: 100%;
+}
+
+.bt-submodal-content h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bt-submodal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+/* ── Cancel Reasons ── */
+.bt-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bt-reason-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.bt-reason-option:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.bt-reason-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.bt-reason-option input[type="radio"] {
+  accent-color: var(--primary);
+}
+
+/* ── Payment Methods ── */
+.bt-payment-methods {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .booking-tracking-overlay {
+    padding: 0.5rem;
+  }
+
+  .booking-tracking-modal {
+    max-height: calc(100vh - 1rem);
+  }
+
+  .bt-actions {
+    flex-direction: column;
+  }
+
+  .bt-actions .btn {
+    width: 100%;
+  }
+
+  .bt-notes {
+    max-width: 100%;
+  }
+}

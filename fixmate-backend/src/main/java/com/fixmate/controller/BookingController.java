@@ -1,11 +1,11 @@
 package com.fixmate.controller;
 
-import com.fixmate.dto.BookingRequestDto;
-import com.fixmate.dto.BookingResponseDto;
+import com.fixmate.dto.*;
 import com.fixmate.entity.User;
 import com.fixmate.enums.BookingStatus;
 import com.fixmate.response.ApiResponse;
 import com.fixmate.service.BookingService;
+import com.fixmate.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,14 +13,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import com.fixmate.dto.EmergencyBookingRequestDto;
-
 @RestController
 @RequestMapping("/api/v1/bookings")
 @RequiredArgsConstructor
 public class BookingController {
 
     private final BookingService bookingService;
+    private final PaymentService paymentService;
 
     @PostMapping("/emergency")
     public ResponseEntity<ApiResponse<BookingResponseDto>> createEmergencyBooking(
@@ -64,5 +63,44 @@ public class BookingController {
     ) {
         BookingResponseDto updatedBooking = bookingService.updateBookingStatus(id, user, status);
         return ResponseEntity.ok(ApiResponse.success("Booking status updated successfully", updatedBooking));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> cancelBooking(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user,
+            @RequestBody(required = false) CancelBookingRequest request
+    ) {
+        BookingResponseDto cancelled = bookingService.cancelBooking(id, user, request);
+        return ResponseEntity.ok(ApiResponse.success("Booking cancelled successfully", cancelled));
+    }
+
+    @PostMapping("/{id}/reschedule")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> rescheduleBooking(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user,
+            @RequestBody RescheduleBookingRequest request
+    ) {
+        BookingResponseDto rescheduled = bookingService.rescheduleBooking(id, user, request);
+        return ResponseEntity.ok(ApiResponse.success("Booking rescheduled successfully", rescheduled));
+    }
+
+    @GetMapping("/{id}/payment")
+    public ResponseEntity<ApiResponse<PaymentResponseDto>> getPayment(
+            @PathVariable Long id
+    ) {
+        PaymentResponseDto payment = paymentService.getPaymentForBooking(id);
+        return ResponseEntity.ok(ApiResponse.success("Payment details fetched", payment));
+    }
+
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<ApiResponse<PaymentResponseDto>> processPayment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user,
+            @RequestBody ProcessPaymentRequest request
+    ) {
+        request.setBookingId(id);
+        PaymentResponseDto payment = paymentService.processPayment(user, request);
+        return ResponseEntity.ok(ApiResponse.success("Payment processed successfully", payment));
     }
 }

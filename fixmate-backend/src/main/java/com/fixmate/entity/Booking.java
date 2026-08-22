@@ -65,4 +65,32 @@ public class Booking {
 
     @Column(length = 1000)
     private String notes;
+
+    /** Reason for cancellation when status = CANCELLED */
+    @Column(length = 500)
+    private String cancellationReason;
+
+    /** When the booking was actually completed */
+    private LocalDateTime completedAt;
+
+    /** When the booking status was last updated */
+    private LocalDateTime statusUpdatedAt;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (statusUpdatedAt == null) statusUpdatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        statusUpdatedAt = LocalDateTime.now();
+        if (status == BookingStatus.COMPLETED && completedAt == null) {
+            completedAt = LocalDateTime.now();
+        }
+    }
 }

@@ -17,20 +17,9 @@ import java.util.Optional;
 public interface ServicePartnerProfileRepository extends JpaRepository<ServicePartnerProfile, Long> {
     Optional<ServicePartnerProfile> findByUser(User user);
 
-    /**
-     * Skill matching is deliberately case-insensitive and whitespace-trimmed so
-     * partners typing "plumbing", "Plumbing ", or "PLUMBING" are still found
-     * for the "Plumbing" category. The partner dashboard now offers a category
-     * picker, so values always match exactly when created through the UI.
-     */
     @Query("SELECT p FROM ServicePartnerProfile p JOIN p.skills s WHERE LOWER(TRIM(s)) = LOWER(TRIM(:skill)) AND p.isAvailable = true AND p.kycStatus = 'APPROVED'")
     List<ServicePartnerProfile> findAvailablePartnersBySkill(@Param("skill") String skill);
 
-    /**
-     * Partners eligible for real-time nearby matching: KYC approved, currently
-     * online, marked available, offering the requested skill, with a live
-     * location, and whose live location is recent (not stale).
-     */
     @Query("SELECT DISTINCT p FROM ServicePartnerProfile p JOIN p.skills s " +
             "WHERE LOWER(TRIM(s)) = LOWER(TRIM(:skill)) " +
             "AND p.kycStatus = 'APPROVED' " +
@@ -44,4 +33,5 @@ public interface ServicePartnerProfileRepository extends JpaRepository<ServicePa
                                                                   @Param("staleAfter") LocalDateTime staleAfter);
 
     long countByKycStatus(KycStatus status);
+    List<ServicePartnerProfile> findByKycStatus(KycStatus status);
 }

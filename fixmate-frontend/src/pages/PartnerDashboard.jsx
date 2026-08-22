@@ -7,6 +7,7 @@ import {
 import { fetchWithAuth } from '../api'
 import { getBrowserPosition, validateLocation } from '../utils/location'
 import StatCard from '../components/ui/StatCard'
+import PartnerEarningsSection from '../components/PartnerEarningsSection'
 import ServiceIcon from '../components/ui/ServiceIcon'
 import MobileNav from '../components/ui/MobileNav'
 import { MOBILE_NAV_ICONS } from '../components/ui/navIcons'
@@ -18,8 +19,10 @@ const LOCATION_PUSH_INTERVAL_MS = 30000; // push live location every 30s while o
 const JOB_FILTERS = [
   { id: 'PENDING', label: 'Pending' },
   { id: 'ACCEPTED', label: 'Accepted' },
+  { id: 'ON_WAY', label: 'On Way' },
   { id: 'IN_PROGRESS', label: 'In Progress' },
   { id: 'COMPLETED', label: 'Completed' },
+  { id: 'CANCELLED', label: 'Cancelled' },
   { id: 'ALL', label: 'All' }
 ];
 
@@ -463,15 +466,36 @@ export default function PartnerDashboard() {
   const renderJobAction = (b) => {
     if (b.status === 'PENDING') {
       return (
-        <button onClick={() => updateStatus(b.id, 'ACCEPTED')} className="btn btn-primary btn-sm">
-          Accept Job
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => updateStatus(b.id, 'ACCEPTED')} className="btn btn-primary btn-sm">
+            Accept
+          </button>
+          <button onClick={() => updateStatus(b.id, 'CANCELLED')} className="btn btn-danger-outline btn-sm">
+            Reject
+          </button>
+        </div>
       );
     }
     if (b.status === 'ACCEPTED') {
       return (
+        <div className="flex gap-2">
+          <button onClick={() => updateStatus(b.id, 'ON_WAY')} className="btn btn-info btn-sm" style={{ background: 'var(--info)', color: '#fff' }}>
+            On My Way
+          </button>
+        </div>
+      );
+    }
+    if (b.status === 'ON_WAY') {
+      return (
+        <button onClick={() => updateStatus(b.id, 'ARRIVED')} className="btn btn-accent btn-sm">
+          Arrived
+        </button>
+      );
+    }
+    if (b.status === 'ARRIVED' || b.status === 'ACCEPTED') {
+      return (
         <button onClick={() => updateStatus(b.id, 'IN_PROGRESS')} className="btn btn-outline btn-sm">
-          Start Work
+          Start Service
         </button>
       );
     }
@@ -577,6 +601,9 @@ export default function PartnerDashboard() {
           bg="var(--success-light)"
         />
       </div>
+
+      {/* ============ Earnings Summary ============ */}
+      <PartnerEarningsSection />
 
       {/* ============ Availability & location ============ */}
       <div className="dashboard-content glass-panel" style={{ marginBottom: '1.5rem' }}>

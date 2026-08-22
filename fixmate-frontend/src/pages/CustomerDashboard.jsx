@@ -10,6 +10,7 @@ import Dropdown from '../components/Dropdown'
 import { getBrowserPosition, validateLocation } from '../utils/location'
 import { getStoredLocation, saveStoredLocation } from '../components/LocationModal'
 import Modal from '../components/ui/Modal'
+import BookingTracking from '../components/BookingTracking'
 import Avatar from '../components/ui/Avatar'
 import ServiceIcon from '../components/ui/ServiceIcon'
 import { RatingStars, StarSelector, RatingDistribution } from '../components/ui/RatingStars'
@@ -565,9 +566,15 @@ export default function CustomerDashboard() {
     }
   };
 
-  const activeBookings = bookings.filter((b) => b.status !== 'COMPLETED');
+  const upcomingBookings = bookings.filter((b) => ['PENDING', 'ACCEPTED'].includes(b.status));
+  const activeBookings = bookings.filter((b) => ['ON_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(b.status));
   const completedBookings = bookings.filter((b) => b.status === 'COMPLETED');
-  const displayedBookings = activeTab === 'active' ? activeBookings : completedBookings;
+  const cancelledBookings = bookings.filter((b) => b.status === 'CANCELLED');
+  const displayedBookings = activeTab === 'upcoming' ? upcomingBookings
+    : activeTab === 'active' ? activeBookings
+    : activeTab === 'completed' ? completedBookings
+    : activeTab === 'cancelled' ? cancelledBookings
+    : bookings;
 
   const filteredCategories = categories.filter((c) =>
     !heroFilter || c.name.toLowerCase().includes(heroFilter.toLowerCase())
@@ -804,14 +811,17 @@ export default function CustomerDashboard() {
         </div>
 
         <div className="tabs">
-          <button type="button" className={`tab-btn ${activeTab === 'active' ? 'tab-btn-active' : ''}`} onClick={() => setActiveTab('active')}>
-            Active
-            <span className="tab-count">{activeBookings.length}</span>
-          </button>
-          <button type="button" className={`tab-btn ${activeTab === 'warranty' ? 'tab-btn-active' : ''}`} onClick={() => setActiveTab('warranty')}>
-            Completed
-            <span className="tab-count">{completedBookings.length}</span>
-          </button>
+          {[
+            { id: 'upcoming', label: 'Upcoming', count: upcomingBookings.length },
+            { id: 'active', label: 'Active', count: activeBookings.length },
+            { id: 'completed', label: 'Completed', count: completedBookings.length },
+            { id: 'cancelled', label: 'Cancelled', count: cancelledBookings.length }
+          ].map((tab) => (
+            <button key={tab.id} type="button" className={`tab-btn ${activeTab === tab.id ? 'tab-btn-active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+              {tab.label}
+              <span className="tab-count">{tab.count}</span>
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -839,6 +849,7 @@ export default function CustomerDashboard() {
                   <th>Partner</th>
                   <th>Status</th>
                   <th>Date</th>
+                  <th>Amount</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -854,30 +865,23 @@ export default function CustomerDashboard() {
                         <ServiceIcon categoryName={b.categoryName} size={15} />
                         <span>{b.categoryName || 'Service'}</span>
                       </div>
-                      {b.notes && <div className="text-secondary" style={{ fontSize: '0.75rem' }}>{b.notes}</div>}
                     </td>
                     <td>{b.partnerName || '—'}</td>
                     <td>
-                      <span className={`status-badge status-${b.status.toLowerCase()}`}>
-                        {b.status === 'IN_PROGRESS' ? 'IN PROGRESS' : b.status}
+                      <span className={`status-badge status-${b.status === 'IN_PROGRESS' ? 'in_progress' : b.status.toLowerCase()}`}>
+                        {b.status.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td>{b.scheduledDate ? new Date(b.scheduledDate).toLocaleString() : '—'}</td>
+                    <td>{b.scheduledDate ? new Date(b.scheduledDate).toLocaleDateString() : '—'}</td>
+                    <td className="text-secondary">{b.totalAmount != null ? `₹${Number(b.totalAmount).toFixed(2)}` : '—'}</td>
                     <td>
                       <div className="flex gap-2 flex-wrap">
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setDetailsBooking(b)}>
                           Track
                         </button>
-                        {activeTab === 'warranty' && (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={() => {
-                              setSelectedBookingForReview(b);
-                              setShowReviewModal(true);
-                            }}
-                          >
-                            <Star size={13} /> Review
+                        {activeTab === 'completed' && b.paymentStatus !== 'SUCCESS' && (
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => setDetailsBooking(b)}>
+                            Pay
                           </button>
                         )}
                       </div>
@@ -1439,78 +1443,17 @@ export default function CustomerDashboard() {
         </form>
       </Modal>
 
-      {/* ============ Booking details / tracker modal ============ */}
-      <Modal
-        open={!!detailsBooking}
-        onClose={() => setDetailsBooking(null)}
-        title={`Booking #${detailsBooking?.id || ''}`}
-        subtitle={detailsBooking ? `${detailsBooking.categoryName || 'Service'}${detailsBooking.emergency ? ' · Emergency' : ''}` : ''}
-      >
-        {detailsBooking && (
-          <div>
-            <div className="flex items-center justify-between" style={{ marginBottom: '1.25rem' }}>
-              <div>
-                <div className="stat-label">Partner</div>
-                <div style={{ fontWeight: 600 }}>{detailsBooking.partnerName || '—'}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="stat-label">Status</div>
-                <span className={`status-badge status-${detailsBooking.status.toLowerCase()}`}>{detailsBooking.status}</span>
-              </div>
-            </div>
-
-            <div style={{ margin: '0.5rem 0 1.5rem' }}>
-              {STATUS_PIPELINE.map((st, i) => {
-                const reached = i <= bookingPipelineIndex(detailsBooking.status);
-                const isLast = i === STATUS_PIPELINE.length - 1;
-                return (
-                  <div key={st} className="flex items-center" style={{ gap: '0.75rem' }}>
-                    <div className="flex flex-col items-center">
-                      <div
-                        style={{
-                          width: '1.6rem', height: '1.6rem', borderRadius: '50%',
-                          background: reached ? (detailsBooking.status === st ? 'var(--primary)' : 'var(--success)') : 'var(--surface-muted)',
-                          border: `2px solid ${reached ? 'transparent' : 'var(--border-strong)'}`,
-                          color: reached ? '#fff' : 'var(--text-muted)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.72rem', fontWeight: 700,
-                          boxShadow: detailsBooking.status === st ? '0 0 0 4px var(--primary-light)' : 'none'
-                        }}
-                      >
-                        {reached ? (detailsBooking.status === st ? st === 'COMPLETED' ? '✓' : i + 1 : '✓') : i + 1}
-                      </div>
-                      {!isLast && <div style={{ width: '2px', flex: 1, minHeight: '1.1rem', background: reached ? 'var(--success)' : 'var(--border-strong)' }} />}
-                    </div>
-                    <div style={{ fontWeight: detailsBooking.status === st ? 700 : 500, color: reached ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {PIPELINE_LABELS[st]}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-2" style={{ gap: '0.6rem' }}>
-              {[
-                { label: 'Scheduled', value: detailsBooking.scheduledDate ? new Date(detailsBooking.scheduledDate).toLocaleString() : '—' },
-                { label: 'Amount', value: detailsBooking.totalAmount != null ? `₹${detailsBooking.totalAmount}` : '—' },
-                { label: 'Customer Location', value: detailsBooking.customerLatitude != null ? `${Number(detailsBooking.customerLatitude).toFixed(4)}, ${Number(detailsBooking.customerLongitude).toFixed(4)}` : '—' },
-                { label: 'Partner Location', value: detailsBooking.partnerLatitude != null ? `${Number(detailsBooking.partnerLatitude).toFixed(4)}, ${Number(detailsBooking.partnerLongitude).toFixed(4)}` : '—' }
-              ].map((row) => (
-                <div key={row.label} className="card" style={{ padding: '0.7rem 0.9rem' }}>
-                  <div className="stat-label">{row.label}</div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 600, marginTop: '0.15rem' }}>{row.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {detailsBooking.notes && (
-              <p className="text-secondary" style={{ fontSize: '0.85rem', marginTop: '1rem' }}>
-                <strong>Notes:</strong> {detailsBooking.notes}
-              </p>
-            )}
-          </div>
-        )}
-      </Modal>
+      {/* ============ Booking Tracking Modal ============ */}
+      {detailsBooking && (
+        <BookingTracking
+          booking={detailsBooking}
+          onClose={() => setDetailsBooking(null)}
+          onStatusUpdate={(updated) => {
+            setDetailsBooking(updated)
+            setBookings(prev => prev.map(b => b.id === updated.id ? updated : b))
+          }}
+        />
+      )}
     </div>
   )
 }
