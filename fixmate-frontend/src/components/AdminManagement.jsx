@@ -53,7 +53,7 @@ export default function AdminManagement({ initialTab }) {
   const handleKycReview = async (profileId, status) => {
     setKycActionLoading(profileId)
     try {
-      const { data: res } = await fetchWithAuth(`/admin/kyc/${profileId}?status=${status}`, { method: 'PATCH' })
+      const { data: res } = await fetchWithAuth(`/admin/kyc/${profileId}`, { method: 'PATCH', body: JSON.stringify({ status }) })
       if (res.success) {
         setData(prev => prev.filter(u => u.id !== profileId))
       }

@@ -32,8 +32,9 @@ public class AdminController {
     public ResponseEntity<ApiResponse<PartnerProfileDto>> reviewKyc(
             @AuthenticationPrincipal User admin,
             @PathVariable Long profileId,
-            @RequestParam KycStatus status
+            @RequestBody UpdateBookingStatusRequest request
     ) {
+        KycStatus status = KycStatus.valueOf(request.getStatus());
         PartnerProfileDto profile = adminService.reviewKyc(admin, profileId, status);
         return ResponseEntity.ok(ApiResponse.success("KYC status updated to " + status, profile));
     }

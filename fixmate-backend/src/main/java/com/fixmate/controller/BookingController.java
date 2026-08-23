@@ -1,8 +1,8 @@
 package com.fixmate.controller;
 
 import com.fixmate.dto.*;
-import com.fixmate.entity.User;
 import com.fixmate.enums.BookingStatus;
+import com.fixmate.entity.User;
 import com.fixmate.response.ApiResponse;
 import com.fixmate.service.BookingService;
 import com.fixmate.service.PaymentService;
@@ -59,8 +59,9 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponseDto>> updateBookingStatus(
             @PathVariable Long id,
             @AuthenticationPrincipal User user,
-            @RequestParam BookingStatus status
+            @RequestBody UpdateBookingStatusRequest request
     ) {
+        BookingStatus status = BookingStatus.valueOf(request.getStatus());
         BookingResponseDto updatedBooking = bookingService.updateBookingStatus(id, user, status);
         return ResponseEntity.ok(ApiResponse.success("Booking status updated successfully", updatedBooking));
     }

@@ -73,7 +73,7 @@ export default function BookingTracking({ booking, onClose, isPartner, onStatusU
     setActionLoading(true)
     setMsg(null)
     try {
-      const { data } = await fetchWithAuth(`/bookings/${booking.id}/status?status=${status}`, { method: 'PATCH' })
+      const { data } = await fetchWithAuth(`/bookings/${booking.id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
       if (data.success) {
         setMsg({ type: 'success', text: `Status updated to ${status}` })
         onStatusUpdate?.(data.data)
