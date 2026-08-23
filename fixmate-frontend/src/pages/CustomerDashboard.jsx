@@ -1017,7 +1017,7 @@ export default function CustomerDashboard() {
                   <button type="button" className="btn btn-outline btn-sm" onClick={useMyCurrentLocation} disabled={locating}>
                     <Navigation size={14} /> {locating ? 'Detecting...' : 'Use my current location'}
                   </button>
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLocationModalOpen(true)}>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setBookingLocationModalOpen(true)}>
                     <MapPin size={14} /> Change Location
                   </button>
                 </div>
