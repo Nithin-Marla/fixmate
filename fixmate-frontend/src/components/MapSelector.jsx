@@ -175,7 +175,7 @@ export default function MapSelector({ open, onClose, onSelect }) {
   if (!open) return null
 
   return (
-    <div className="map-selector-overlay">
+    <div className="map-selector-overlay" onClick={(e) => e.stopPropagation()}>
       <div className="map-selector">
         {/* Header */}
         <div className="map-selector-header">
@@ -199,6 +199,7 @@ export default function MapSelector({ open, onClose, onSelect }) {
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true) }}
               onFocus={() => setSearchOpen(true)}
+              onClick={(e) => e.stopPropagation()}
             />
             {searchQuery && (
               <button className="map-search-clear" onClick={() => { setSearchQuery(''); setSearchResults([]) }} type="button">
@@ -227,7 +228,7 @@ export default function MapSelector({ open, onClose, onSelect }) {
         </div>
 
         {/* Map */}
-        <div className="map-container">
+        <div className="map-container" onClick={(e) => e.stopPropagation()}>
           <MapContainer
             center={initialCenter}
             zoom={DEFAULT_ZOOM}
@@ -238,6 +239,7 @@ export default function MapSelector({ open, onClose, onSelect }) {
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
+              eventHandlers={{ click: (e) => L.DomEvent.stopPropagation(e.originalEvent) }}
             />
             <MapEventsHandler onPositionChange={handlePositionChange} markerPosition={markerPos} />
             <LocateButton onFound={(lat, lng) => handlePositionChange(lat, lng)} />

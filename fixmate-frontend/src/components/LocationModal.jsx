@@ -134,7 +134,7 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
   if (!open) return null
 
   return (
-    <div className="location-modal-overlay" onClick={onClose}>
+    <div className="location-modal-overlay" onClick={mapOpen ? undefined : onClose}>
       <div className="location-modal" onClick={(e) => e.stopPropagation()}>
         <div className="location-modal-header">
           <div className="location-modal-title">
