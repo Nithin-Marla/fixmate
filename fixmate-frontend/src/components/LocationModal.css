@@ -230,6 +230,22 @@
   background: var(--primary-soft);
 }
 
+/* Map option (Select on map) */
+.location-option-map {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.location-option-map:hover {
+  background: var(--primary-soft);
+}
+
+.location-option-icon-map {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
 /* Danger option (Clear location) */
 .location-option-danger:hover {
   background: var(--danger-light);

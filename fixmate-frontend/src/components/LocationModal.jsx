@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MapPin, Search, Clock, X, Loader2, AlertTriangle, Locate, ChevronRight, Trash2 } from 'lucide-react'
+import { MapPin, Search, Clock, X, Loader2, AlertTriangle, Locate, ChevronRight, Trash2, Map } from 'lucide-react'
 import { getBrowserPosition } from '../utils/location'
 import { reverseGeocode, forwardGeocode } from '../utils/reverseGeocode'
+import MapSelector from './MapSelector'
 import './LocationModal.css'
 
 const STORAGE_KEY = 'fixmate_selected_location'
@@ -49,6 +50,7 @@ export function clearStoredLocation() {
  * Props: open, onClose, onSelect({latitude, longitude, name, formattedAddress?}), currentLocation
  */
 export default function LocationModal({ open, onClose, onSelect, currentLocation }) {
+  const [mapOpen, setMapOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -191,6 +193,20 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
             {!detecting && <ChevronRight size={16} className="location-option-arrow" />}
           </button>
 
+          <button
+            className="location-option location-option-map"
+            onClick={() => setMapOpen(true)}
+          >
+            <div className="location-option-icon location-option-icon-map">
+              <Map size={18} />
+            </div>
+            <div className="location-option-text">
+              <div className="location-option-title">Select on map</div>
+              <div className="location-option-subtitle">Choose a location directly from the map</div>
+            </div>
+            <ChevronRight size={16} className="location-option-arrow" />
+          </button>
+
           {searchResults.length > 0 && (
             <div className="location-section">
               <div className="location-section-title">Search Results</div>
@@ -262,6 +278,12 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
           )}
         </div>
       </div>
+
+      <MapSelector
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        onSelect={(loc) => { onSelect(loc); onClose() }}
+      />
     </div>
   )
 }
