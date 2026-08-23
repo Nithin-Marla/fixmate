@@ -993,51 +993,6 @@ export default function CustomerDashboard() {
             {/* STEP 1 — Location */}
             {bookingStep === 1 && (
               <div>
-                <div className="form-label">Your Location</div>
-                {confirmedLocation ? (
-                  <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '0.75rem', background: 'var(--surface-muted)' }}>
-                    <div className="flex items-center gap-3">
-                      <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: 'var(--radius-md)', background: 'var(--primary-soft)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <MapPin size={18} />
-                      </div>
-                      <div className="flex-1" style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{customerLocation?.name || 'Current location'}</div>
-                        {customerLocation?.formattedAddress && (
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{customerLocation.formattedAddress}</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-secondary" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                    Set your location to find nearby professionals.
-                  </p>
-                )}
-                <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: '0.6rem' }}>
-                  <button type="button" className="btn btn-outline btn-sm" onClick={useMyCurrentLocation} disabled={locating}>
-                    <Navigation size={14} /> {locating ? 'Detecting...' : 'Use my current location'}
-                  </button>
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setBookingLocationModalOpen(true)}>
-                    <MapPin size={14} /> Change Location
-                  </button>
-                </div>
-                {locating && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
-                    <Loader2 size={14} className="spin" /> Finding your location...
-                  </div>
-                )}
-                {locationMsg && (
-                  <div
-                    style={{
-                      fontSize: '0.8rem', marginBottom: '0.6rem',
-                      color: locationMsg.type === 'error' ? 'var(--danger)' : locationMsg.type === 'success' ? 'var(--success-dark)' : 'var(--text-secondary)'
-                    }}
-                  >
-                    {locationMsg.type === 'success' && <CheckCircle2 size={14} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: '-2px' }} />}
-                    {locationMsg.text}
-                  </div>
-                )}
-
                 <div className="form-group">
                   <label className="form-label">Address</label>
                   {addresses.length === 0 && !showAddressForm ? (
