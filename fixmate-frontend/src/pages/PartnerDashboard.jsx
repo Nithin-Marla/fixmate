@@ -455,6 +455,11 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
       if (data.success) {
         loadBookings();
       } else {
+        // Fallback for older deployed backends that don't have ON_WAY or ARRIVED in their BookingStatus enum
+        if (data.message && data.message.includes('Failed to convert value of type') && (newStatus === 'ON_WAY' || newStatus === 'ARRIVED')) {
+          console.warn(`Backend does not support ${newStatus}. Falling back to IN_PROGRESS.`);
+          return updateStatus(bookingId, 'IN_PROGRESS');
+        }
         alert(data.message);
       }
     } catch (err) {
