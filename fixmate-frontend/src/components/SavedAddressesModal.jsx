@@ -50,7 +50,7 @@ export default function SavedAddressesModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 1050 }}>
       <div className="bg-base-100 rounded-xl shadow-xl w-full max-w-lg flex flex-col max-h-[85vh]">
         
         {/* Header */}
