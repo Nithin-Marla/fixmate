@@ -31,6 +31,7 @@ public class BookingService {
     private final NotificationService notificationService;
     private final PaymentRepository paymentRepository;
     private final AuditLogService auditLogService;
+    private final LiveTrackingService liveTrackingService;
 
     @Value("${fixmate.nearby-search.emergency-max-radius-km:25}")
     private double emergencyMaxRadiusKm;
@@ -421,5 +422,52 @@ public class BookingService {
                 "Emergency booking created by " + customer.getFirstName(), customer);
 
         return mapToDto(savedBooking);
+    }
+
+    public BookingResponseDto updateBookingLocation(Long id, User partner, BookingLocationUpdateRequest request) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found."));
+        
+        if (!booking.getPartner().getId().equals(partner.getId())) {
+            throw new RuntimeException("You are not authorized to update location for this booking.");
+        }
+        
+        if (booking.getStatus() != BookingStatus.ACCEPTED && booking.getStatus() != BookingStatus.ON_WAY) {
+            throw new RuntimeException("Location updates are only allowed when the booking is accepted or on the way.");
+        }
+        
+        if (request.getLatitude() < -90 || request.getLatitude() > 90 || 
+            request.getLongitude() < -180 || request.getLongitude() > 180) {
+            throw new RuntimeException("Invalid coordinates.");
+        }
+        
+        booking.setPartnerLatitude(request.getLatitude());
+        booking.setPartnerLongitude(request.getLongitude());
+        booking.setPartnerLocationUpdatedAt(LocalDateTime.now());
+        
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        liveTrackingService.pushLocation(savedBooking.getId(), request.getLatitude(), request.getLongitude());
+        
+        return mapToDto(savedBooking);
+    }
+
+    public String createTrackingStream(Long bookingId, User user) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found."));
+                
+        if (!booking.getCustomer().getId().equals(user.getId()) && !booking.getPartner().getId().equals(user.getId())) {
+            throw new RuntimeException("Not authorized to track this booking.");
+        }
+        
+        if (booking.getStatus() == BookingStatus.COMPLETED || booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new RuntimeException("Cannot track completed or cancelled bookings.");
+        }
+        
+        return liveTrackingService.createStream(bookingId);
+    }
+
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter getTrackingStream(String streamId) {
+        return liveTrackingService.getEmitter(streamId);
     }
 }

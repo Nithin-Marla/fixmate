@@ -7,6 +7,7 @@ import {
 import { fetchWithAuth } from '../api'
 import { RatingStars, StarSelector } from './ui/RatingStars'
 import ServiceIcon from './ui/ServiceIcon'
+import LiveTrackingMap from './LiveTrackingMap'
 import './BookingTracking.css'
 
 const STATUS_PIPELINE = [
@@ -43,6 +44,7 @@ export default function BookingTracking({ booking, onClose, isPartner, onStatusU
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [newDate, setNewDate] = useState('')
   const [showPayModal, setShowPayModal] = useState(false)
+  const [showLiveTracking, setShowLiveTracking] = useState(false)
   const [payMethod, setPayMethod] = useState('CASH')
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [rating, setRating] = useState(5)
@@ -348,6 +350,16 @@ export default function BookingTracking({ booking, onClose, isPartner, onStatusU
                   <RotateCcw size={14} /> Reschedule
                 </button>
               )}
+              {booking.status === 'ON_WAY' && (
+                <button
+                  className="btn btn-info"
+                  onClick={() => setShowLiveTracking(true)}
+                  disabled={actionLoading}
+                  style={{ color: 'white' }}
+                >
+                  <MapPin size={14} /> Track Professional
+                </button>
+              )}
               <button
                 className="btn btn-danger-outline"
                 onClick={() => setShowCancelModal(true)}
@@ -515,6 +527,14 @@ export default function BookingTracking({ booking, onClose, isPartner, onStatusU
               </div>
             </div>
           </div>
+        )}
+        
+        {/* Live Tracking Map */}
+        {showLiveTracking && (
+          <LiveTrackingMap 
+            booking={booking} 
+            onClose={() => setShowLiveTracking(false)} 
+          />
         )}
       </div>
     </div>

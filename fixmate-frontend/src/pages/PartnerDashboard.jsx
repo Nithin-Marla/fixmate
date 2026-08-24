@@ -128,6 +128,60 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
     };
   }, []);
 
+  // Live Tracking logic for active bookings
+  const trackingWatchId = useRef(null);
+  const activeTrackingBookingId = useRef(null);
+  const LIVE_TRACKING_INTERVAL_MS = 5000;
+  const lastTrackingPushTime = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      if (trackingWatchId.current) {
+        navigator.geolocation.clearWatch(trackingWatchId.current);
+        trackingWatchId.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const activeBooking = bookings.find(b => b.status === 'ON_WAY');
+    if (activeBooking) {
+      if (activeTrackingBookingId.current !== activeBooking.id) {
+        activeTrackingBookingId.current = activeBooking.id;
+        
+        const pushTrackingLocation = async (lat, lon) => {
+          const now = Date.now();
+          if (now - lastTrackingPushTime.current < LIVE_TRACKING_INTERVAL_MS) {
+            return; 
+          }
+          lastTrackingPushTime.current = now;
+          try {
+            await fetchWithAuth(`/bookings/${activeBooking.id}/location`, {
+              method: 'POST',
+              body: JSON.stringify({ latitude: lat, longitude: lon })
+            });
+          } catch (e) {
+            console.error("Failed to push live tracking location", e);
+          }
+        };
+
+        if (navigator.geolocation) {
+          trackingWatchId.current = navigator.geolocation.watchPosition(
+            (pos) => pushTrackingLocation(pos.coords.latitude, pos.coords.longitude),
+            (err) => console.error("Tracking watch error:", err),
+            { enableHighAccuracy: true }
+          );
+        }
+      }
+    } else {
+      if (trackingWatchId.current) {
+        navigator.geolocation.clearWatch(trackingWatchId.current);
+        trackingWatchId.current = null;
+      }
+      activeTrackingBookingId.current = null;
+    }
+  }, [bookings]);
+
   const loadCategories = async () => {
     try {
       const { data } = await fetchWithAuth('/categories');
@@ -508,9 +562,15 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
     }
     if (b.status === 'ON_WAY') {
       return (
-        <button onClick={() => updateStatus(b.id, 'ARRIVED')} className="btn btn-accent btn-sm">
-          Arrived
-        </button>
+        <div className="flex flex-col gap-2">
+          <div className="text-xs text-info flex items-center gap-1 font-semibold mb-1">
+             <span className="w-2 h-2 rounded-full bg-info animate-pulse"></span>
+             Live Location Sharing [Active]
+          </div>
+          <button onClick={() => updateStatus(b.id, 'ARRIVED')} className="btn btn-accent btn-sm">
+            Arrived
+          </button>
+        </div>
       );
     }
     if (b.status === 'ARRIVED' || b.status === 'ACCEPTED') {

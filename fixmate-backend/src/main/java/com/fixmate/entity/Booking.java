@@ -63,6 +63,9 @@ public class Booking {
     /** Partner's live longitude at the time of booking. */
     private Double partnerLongitude;
 
+    /** When the partner's live location was last updated. */
+    private LocalDateTime partnerLocationUpdatedAt;
+
     @Column(length = 1000)
     private String notes;
 

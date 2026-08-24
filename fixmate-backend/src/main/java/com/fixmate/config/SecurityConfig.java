@@ -28,6 +28,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 // Public: SSE ticket GET (unguessable stream id is the credential)
                 .requestMatchers("/api/v1/search/nearby/stream/*").permitAll()
+                .requestMatchers("/api/v1/bookings/tracking/stream/*").permitAll()
                 // All other /api/v1/** routes require a valid JWT
                 .anyRequest().authenticated()
             )

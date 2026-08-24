@@ -65,6 +65,36 @@ public class BookingController {
         BookingResponseDto updatedBooking = bookingService.updateBookingStatus(id, user, status);
         return ResponseEntity.ok(ApiResponse.success("Booking status updated successfully", updatedBooking));
     }
+    @PostMapping("/{id}/location")
+    public ResponseEntity<ApiResponse<BookingResponseDto>> updateBookingLocation(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User partner,
+            @RequestBody BookingLocationUpdateRequest request
+    ) {
+        BookingResponseDto updatedBooking = bookingService.updateBookingLocation(id, partner, request);
+        return ResponseEntity.ok(ApiResponse.success("Location updated successfully", updatedBooking));
+    }
+
+    @PostMapping("/{id}/tracking/stream")
+    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> createTrackingStream(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        String ticket = bookingService.createTrackingStream(id, user);
+        return ResponseEntity.ok(ApiResponse.success("Live stream opened", java.util.Map.of(
+                "streamId", ticket,
+                "url", "/bookings/tracking/stream/" + ticket
+        )));
+    }
+
+    @GetMapping(value = "/tracking/stream/{streamId}", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamTrackingLocation(@PathVariable String streamId) {
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = bookingService.getTrackingStream(streamId);
+        if (emitter == null) {
+            throw new RuntimeException("Live stream not found or expired.");
+        }
+        return emitter;
+    }
 
     @PostMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<BookingResponseDto>> cancelBooking(
