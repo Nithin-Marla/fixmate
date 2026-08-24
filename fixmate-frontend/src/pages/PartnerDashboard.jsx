@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import { getBrowserPosition, validateLocation } from '../utils/location'
+import { reverseGeocode } from '../utils/reverseGeocode'
 import StatCard from '../components/ui/StatCard'
 import PartnerEarningsSection from '../components/PartnerEarningsSection'
 import ServiceIcon from '../components/ui/ServiceIcon'
@@ -66,6 +67,7 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
   const [pendingLon, setPendingLon] = useState('');
   const [locating, setLocating] = useState(false);
   const [locationMsg, setLocationMsg] = useState(null);
+  const [locationAddress, setLocationAddress] = useState(null);
 
   // Notifications: persisted in MySQL, polled every 8s. Panel is portaled to
   // document.body (fixed) so it always floats above the page content.
@@ -148,6 +150,16 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
       }
     };
   }, []);
+
+  // Reverse geocode live coordinates to show a human-readable address
+  useEffect(() => {
+    if (!liveCoords) { setLocationAddress(null); return; }
+    let cancelled = false;
+    reverseGeocode(liveCoords.latitude, liveCoords.longitude)
+      .then((geo) => { if (!cancelled) setLocationAddress(geo.name); })
+      .catch(() => { if (!cancelled) setLocationAddress(null); });
+    return () => { cancelled = true; };
+  }, [liveCoords]);
 
   useEffect(() => {
     const activeBooking = bookings.find(b => b.status === 'ON_WAY');
@@ -775,6 +787,11 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
               </span>
             )}
           </div>
+          {locationAddress && (
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0 0 0.5rem', fontWeight: 500 }}>
+              <MapPin size={14} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />{locationAddress}
+            </p>
+          )}
           <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: '0.75rem' }}>
             <button type="button" className="btn btn-outline btn-sm" onClick={useMyCurrentLocation} disabled={locating}>
               <Navigation size={14} /> {locating ? 'Getting location...' : 'Use my current location'}
