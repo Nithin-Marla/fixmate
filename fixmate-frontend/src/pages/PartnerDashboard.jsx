@@ -11,6 +11,7 @@ import StatCard from '../components/ui/StatCard'
 import PartnerEarningsSection from '../components/PartnerEarningsSection'
 import ServiceIcon from '../components/ui/ServiceIcon'
 import MobileNav from '../components/ui/MobileNav'
+import MapSelector from '../components/MapSelector'
 import { MOBILE_NAV_ICONS } from '../components/ui/navIcons'
 import { SkeletonList } from '../components/ui/Skeleton'
 import './Dashboard.css'
@@ -68,6 +69,7 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
   const [locating, setLocating] = useState(false);
   const [locationMsg, setLocationMsg] = useState(null);
   const [locationAddress, setLocationAddress] = useState(null);
+  const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
 
   // Notifications: persisted in MySQL, polled every 8s. Panel is portaled to
   // document.body (fixed) so it always floats above the page content.
@@ -448,6 +450,15 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
     setLocating(false);
   };
 
+  const handleMapSelect = (loc) => {
+    setPendingLat(String(loc.latitude));
+    setPendingLon(String(loc.longitude));
+    setLocationMsg({
+      type: 'success',
+      text: `Address selected: ${loc.name || 'Location set'} — click "Set Location" to save.`
+    });
+  };
+
   const handleSetLocation = async () => {
     setLocationMsg(null);
     const result = validateLocation(pendingLat, pendingLon);
@@ -796,6 +807,9 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
             <button type="button" className="btn btn-outline btn-sm" onClick={useMyCurrentLocation} disabled={locating}>
               <Navigation size={14} /> {locating ? 'Getting location...' : 'Use my current location'}
             </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => setMapSelectorOpen(true)}>
+              <MapPin size={14} /> Set Address
+            </button>
           </div>
 
           {locationMsg && (
@@ -1092,6 +1106,12 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
           </button>
         </div>
       )}
+
+      <MapSelector
+        open={mapSelectorOpen}
+        onClose={() => setMapSelectorOpen(false)}
+        onSelect={handleMapSelect}
+      />
     </div>
   )
 }
