@@ -20,6 +20,7 @@ import Stepper from '../components/ui/Stepper'
 import MobileNav from '../components/ui/MobileNav'
 import { MOBILE_NAV_ICONS } from '../components/ui/navIcons'
 import { SkeletonList } from '../components/ui/Skeleton'
+import SavedAddressesModal from '../components/SavedAddressesModal'
 import './Dashboard.css'
 
 const emptyAddress = {
@@ -88,6 +89,7 @@ export default function CustomerDashboard() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressForm, setAddressForm] = useState(emptyAddress);
   const [locating, setLocating] = useState(false);
+  const [showAddressManager, setShowAddressManager] = useState(false);
   const [heroFilter, setHeroFilter] = useState('');
   // Location flow
   const [confirmedLocation, setConfirmedLocation] = useState(null);
@@ -546,8 +548,29 @@ export default function CustomerDashboard() {
         setBookingError(data.message || 'Failed to add address');
       }
     } catch (err) {
-      setBookingError(err.message);
+      alert(err.message);
     }
+  };
+
+  const handleAddressDeleted = (id) => {
+    setAddresses((prev) => prev.filter(a => String(a.id) !== String(id)));
+    if (String(selectedAddress) === String(id)) {
+      setSelectedAddress('');
+    }
+  };
+
+  const handleAddressUpdated = (updatedAddr) => {
+    setAddresses((prev) => {
+      // If the updated address is set as default, unset others locally
+      if (updatedAddr.isDefault) {
+        return prev.map(a => 
+          String(a.id) === String(updatedAddr.id) 
+            ? updatedAddr 
+            : { ...a, isDefault: false }
+        );
+      }
+      return prev.map(a => String(a.id) === String(updatedAddr.id) ? updatedAddr : a);
+    });
   };
 
   const handleCreateReview = async (e) => {
@@ -1007,7 +1030,7 @@ export default function CustomerDashboard() {
               </div>
             )}
 
-            {/* STEP 1 — Location */}
+            {/* STEP 1 - Location */}
             {bookingStep === 1 && (
               <div>
                 <div className="form-group">
@@ -1017,16 +1040,32 @@ export default function CustomerDashboard() {
                       No saved addresses yet.
                     </p>
                   ) : (
-                    <Dropdown
-                      value={selectedAddress}
-                      onChange={(value) => setSelectedAddress(value)}
-                      placeholder="Select an address..."
-                      emptyText="No saved addresses."
-                      options={addresses.map((a) => ({
-                        value: String(a.id),
-                        label: `${a.street}, ${a.city} — ${a.state}`
-                      }))}
-                    />
+                    <div className="flex flex-col gap-3">
+                      {selectedAddress ? (
+                        <div className="p-3 border border-primary/30 bg-primary/5 rounded-lg flex justify-between items-center">
+                          <div>
+                            <span className="font-semibold block text-sm">
+                              {addresses.find(a => String(a.id) === String(selectedAddress))?.buildingName ? `${addresses.find(a => String(a.id) === String(selectedAddress))?.buildingName}, ` : ''}{addresses.find(a => String(a.id) === String(selectedAddress))?.street || 'Selected Address'}
+                            </span>
+                            <span className="text-xs text-base-content/70">
+                              {addresses.find(a => String(a.id) === String(selectedAddress))?.city}, {addresses.find(a => String(a.id) === String(selectedAddress))?.state}
+                            </span>
+                          </div>
+                          <CheckCircle2 size={18} className="text-primary" />
+                        </div>
+                      ) : (
+                        <div className="p-3 border border-base-200 bg-base-50 rounded-lg text-sm text-base-content/60 italic">
+                          No address selected. Please select one.
+                        </div>
+                      )}
+                      <button 
+                        type="button" 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setShowAddressManager(true)}
+                      >
+                        <MapPin size={14} /> Manage Saved Addresses
+                      </button>
+                    </div>
                   )}
 
                   {showAddressForm && (
@@ -1450,6 +1489,19 @@ export default function CustomerDashboard() {
         }}
         currentLocation={customerLocation}
       />
+
+      {/* ============ Saved Addresses Modal ============ */}
+      {showAddressManager && (
+        <SavedAddressesModal 
+          addresses={addresses}
+          selectedAddressId={selectedAddress}
+          onSelect={(id) => setSelectedAddress(id)}
+          onClose={() => setShowAddressManager(false)}
+          onAddNew={() => setShowAddressForm(true)}
+          onAddressDeleted={handleAddressDeleted}
+          onAddressUpdated={handleAddressUpdated}
+        />
+      )}
     </div>
   )
 }
