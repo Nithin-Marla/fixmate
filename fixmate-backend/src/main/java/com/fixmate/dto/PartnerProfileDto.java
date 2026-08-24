@@ -27,4 +27,5 @@ public class PartnerProfileDto {
     private String kycDocumentRef;
     private Double smartServiceScore;
     private Integer totalReviews;
+    private boolean acceptsEmergency;
 }

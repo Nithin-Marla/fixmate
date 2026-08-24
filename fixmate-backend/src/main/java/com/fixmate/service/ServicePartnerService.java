@@ -102,6 +102,7 @@ public class ServicePartnerService {
         profile.setExperienceYears(request.getExperienceYears());
         profile.setHourlyRate(request.getHourlyRate());
         profile.setSkills(request.getSkills());
+        profile.setAcceptsEmergency(request.isAcceptsEmergency());
         
         if (request.isAvailable() && profile.getKycStatus() != KycStatus.APPROVED) {
             throw new RuntimeException("Cannot set availability to true. KYC must be APPROVED first.");
@@ -153,6 +154,21 @@ public class ServicePartnerService {
         return mapToDto(savedProfile);
     }
 
+    public PartnerProfileDto toggleEmergencyAvailability(User user, boolean acceptsEmergency) {
+        verifyServicePartnerRole(user);
+
+        ServicePartnerProfile profile = profileRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Partner profile not found."));
+
+        if (acceptsEmergency && profile.getKycStatus() != KycStatus.APPROVED) {
+            throw new RuntimeException("KYC must be approved to accept emergency requests.");
+        }
+
+        profile.setAcceptsEmergency(acceptsEmergency);
+        ServicePartnerProfile savedProfile = profileRepository.save(profile);
+        return mapToDto(savedProfile);
+    }
+
     private void verifyServicePartnerRole(User user) {
         if (user.getRole() != Role.ROLE_SERVICE_PARTNER) {
             throw new RuntimeException("Access denied: User is not a Service Partner.");
@@ -174,6 +190,7 @@ public class ServicePartnerService {
                 .kycDocumentRef(profile.getKycDocumentRef())
                 .smartServiceScore(profile.getSmartServiceScore())
                 .totalReviews(profile.getTotalReviews())
+                .acceptsEmergency(profile.isAcceptsEmergency())
                 .build();
     }
 }

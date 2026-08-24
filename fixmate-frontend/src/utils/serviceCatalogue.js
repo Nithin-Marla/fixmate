@@ -22,6 +22,8 @@ const CATALOGUE = [
       'Faucet installation',
       'Sink repair',
       'Shower repair',
+      'Water pipe repair',
+      'Bathroom fitting',
     ],
     problems: [
       'Leaking tap',
@@ -34,7 +36,15 @@ const CATALOGUE = [
       'Sewer backup',
       'Dripping faucet',
       'Water heater issue',
+      'Tap is leaking',
+      'Pipe is leaking',
+      'Water pipe burst',
+      'Toilet blocked',
+      'Drain blocked',
+      'No water',
+      'Leaking pipe',
     ],
+    keywords: ['plumb', 'water', 'tap', 'pipe', 'leak', 'drain', 'toilet', 'faucet', 'shower', 'sink', 'sewage'],
   },
   {
     category: 'Electrical',
@@ -50,6 +60,7 @@ const CATALOGUE = [
       'MCB repair',
       'Inverter installation',
       'Voltage stabilizer repair',
+      'Mains power repair',
     ],
     problems: [
       'Power failure',
@@ -62,7 +73,15 @@ const CATALOGUE = [
       'Overheating wires',
       'Fan not working',
       'Generator repair',
+      'Fan making noise',
+      'Fan not spinning',
+      'Switch not working',
+      'Light not working',
+      'Power cut',
+      'Electric shock',
+      'Wiring problem',
     ],
+    keywords: ['electr', 'power', 'fan', 'light', 'switch', 'socket', 'wire', 'wiring', 'spark', 'mcb', 'inverter'],
   },
   {
     category: 'AC & Appliances',
@@ -90,7 +109,14 @@ const CATALOGUE = [
       'Water purifier not working',
       'AC compressor issue',
       'AC gas leak',
+      'AC water leakage',
+      'AC gas issue',
+      'Refrigerator not working',
+      'Washing machine not working',
+      'Microwave not working',
+      'AC fan not working',
     ],
+    keywords: ['ac', 'air condition', 'fridge', 'refriger', 'wash', 'laundry', 'microwave', 'oven', 'purifier', 'dishwash', 'geyser', 'appliance'],
   },
   {
     category: 'Carpentry',
@@ -118,7 +144,10 @@ const CATALOGUE = [
       'Wardrobe jammed',
       'Window stuck',
       'Wood rot',
+      'Door not closing',
+      'Furniture broken',
     ],
+    keywords: ['carpent', 'furniture', 'door', 'window', 'cabinet', 'shelf', 'wardrobe', 'wood', 'hinge', 'drawer'],
   },
   {
     category: 'Painting',
@@ -146,7 +175,9 @@ const CATALOGUE = [
       'Mold on wall',
       'Color consultation',
       'Renovation painting',
+      'Wall paint peeling',
     ],
+    keywords: ['paint', 'painting', 'wall', 'color', 'colour', 'texture', 'waterproof', 'damp', 'seepage'],
   },
   {
     category: 'Cleaning',
@@ -174,7 +205,10 @@ const CATALOGUE = [
       'Greasy kitchen',
       'Dust allergy',
       'Foul smell in house',
+      'House needs cleaning',
+      'Pest problem',
     ],
+    keywords: ['clean', 'cleaning', 'pest', 'cockroach', 'termite', 'rat', 'bug', 'hygien', 'dirt', 'sofa', 'carpet'],
   },
 ];
 
@@ -186,10 +220,10 @@ function buildSearchIndex() {
   const index = [];
   for (const cat of CATALOGUE) {
     for (const service of cat.services) {
-      index.push({ category: cat.category, icon: cat.icon, name: service, type: 'service' });
+      index.push({ category: cat.category, icon: cat.icon, name: service, type: 'service', keywords: cat.keywords || [] });
     }
     for (const problem of cat.problems) {
-      index.push({ category: cat.category, icon: cat.icon, name: problem, type: 'problem' });
+      index.push({ category: cat.category, icon: cat.icon, name: problem, type: 'problem', keywords: cat.keywords || [] });
     }
   }
   return index;
@@ -270,6 +304,8 @@ export function searchCatalogue(query, limit = 12) {
     else if (category.includes(q)) score = 30;
     // Fuzzy: remove spaces and check containment
     else if (name.replace(/\s+/g, '').includes(q.replace(/\s+/g, ''))) score = 20;
+    // Keyword match: check if any category keyword is a prefix of the query
+    else if (entry.keywords && entry.keywords.some((kw) => q.startsWith(kw) || kw.startsWith(q))) score = 25;
 
     // Boost services slightly over problems for generic searches
     if (entry.type === 'service') score += 2;

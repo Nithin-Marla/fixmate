@@ -61,6 +61,10 @@ public class ServicePartnerProfile {
 
     @Builder.Default
     @Column(nullable = false)
+    private boolean acceptsEmergency = false;
+
+    @Builder.Default
+    @Column(nullable = false)
     private Double smartServiceScore = 0.0;
 
     @Builder.Default

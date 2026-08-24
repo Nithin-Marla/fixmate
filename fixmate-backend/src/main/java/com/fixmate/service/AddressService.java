@@ -22,6 +22,7 @@ public class AddressService {
         }
 
         Address address = Address.builder()
+                .buildingName(request.getBuildingName())
                 .street(request.getStreet())
                 .city(request.getCity())
                 .state(request.getState())
@@ -56,6 +57,7 @@ public class AddressService {
             resetDefaultAddresses(currentUser);
         }
 
+        address.setBuildingName(request.getBuildingName());
         address.setStreet(request.getStreet());
         address.setCity(request.getCity());
         address.setState(request.getState());
@@ -93,6 +95,7 @@ public class AddressService {
     private AddressDto mapToDto(Address address) {
         return AddressDto.builder()
                 .id(address.getId())
+                .buildingName(address.getBuildingName())
                 .street(address.getStreet())
                 .city(address.getCity())
                 .state(address.getState())

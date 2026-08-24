@@ -130,6 +130,7 @@ public class ReviewService {
                 .active(profile.isOnline())
                 .distanceKm(distanceKm)
                 .smartServiceScore(profile.getSmartServiceScore())
+                .acceptsEmergency(profile.isAcceptsEmergency())
                 .reviews(reviews)
                 .build();
     }

@@ -88,6 +88,15 @@ public class ServicePartnerController {
         return ResponseEntity.ok(ApiResponse.success("Status updated successfully", profile));
     }
 
+    @PatchMapping("/emergency")
+    public ResponseEntity<ApiResponse<PartnerProfileDto>> toggleEmergencyAvailability(
+            @AuthenticationPrincipal User currentUser,
+            @RequestParam boolean acceptsEmergency
+    ) {
+        PartnerProfileDto profile = partnerService.toggleEmergencyAvailability(currentUser, acceptsEmergency);
+        return ResponseEntity.ok(ApiResponse.success("Emergency availability updated", profile));
+    }
+
     /**
      * Public profile of a service partner (basic info + ratings + reviews from
      * the database), used by the customer's "View Profile" on a nearby partner

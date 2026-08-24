@@ -153,6 +153,10 @@ public class SearchService {
         long totalBookings = bookingRepository.countByPartnerAndStatus(
                 profile.getUser(), BookingStatus.COMPLETED);
 
+        // Calculate FixMate Match Score
+        int matchScore = calculateMatchScore(profile, distanceKm, categoryName, totalBookings);
+        List<String> matchReasons = buildMatchReasons(profile, distanceKm, categoryName, totalBookings);
+
         return NearbyPartnerDto.builder()
                 .partnerProfileId(profile.getId())
                 .userId(profile.getUser().getId())
@@ -169,6 +173,102 @@ public class SearchService {
                 .kycStatus(profile.getKycStatus().name())
                 .totalBookings(totalBookings)
                 .lastLocationUpdate(profile.getLastLocationUpdate())
+                .matchScore(matchScore)
+                .matchReasons(matchReasons)
+                .emergencyAvailable(profile.isAcceptsEmergency())
                 .build();
+    }
+
+    /**
+     * Calculate a 0–100 FixMate Match Score using transparent weighted criteria.
+     * Score components:
+     *   - Available/online (25 pts)
+     *   - Distance proximity (20 pts)
+     *   - Rating (20 pts)
+     *   - Experience/completed jobs (15 pts)
+     *   - KYC verified (10 pts)
+     *   - Relevant skill match (10 pts)
+     */
+    private int calculateMatchScore(ServicePartnerProfile profile, double distanceKm,
+                                     String categoryName, long totalBookings) {
+        int score = 0;
+
+        // 1. Online/Available (25 pts)
+        if (profile.isOnline() && profile.isAvailable()) {
+            score += 25;
+        } else if (profile.isOnline()) {
+            score += 10;
+        }
+
+        // 2. Distance proximity (20 pts) — closer = higher score
+        if (distanceKm <= 1.0) score += 20;
+        else if (distanceKm <= 2.0) score += 16;
+        else if (distanceKm <= 5.0) score += 12;
+        else if (distanceKm <= 10.0) score += 8;
+        else if (distanceKm <= 20.0) score += 4;
+
+        // 3. Rating (20 pts)
+        double rating = profile.getSmartServiceScore();
+        if (rating >= 4.5) score += 20;
+        else if (rating >= 4.0) score += 16;
+        else if (rating >= 3.5) score += 12;
+        else if (rating >= 3.0) score += 8;
+        else if (rating > 0) score += 4;
+        // No rating yet = neutral (0 pts)
+
+        // 4. Experience/Completed jobs (15 pts)
+        if (totalBookings >= 100) score += 15;
+        else if (totalBookings >= 50) score += 12;
+        else if (totalBookings >= 20) score += 9;
+        else if (totalBookings >= 5) score += 6;
+        else if (totalBookings > 0) score += 3;
+
+        // 5. KYC Verified (10 pts)
+        if (profile.getKycStatus() == com.fixmate.enums.KycStatus.APPROVED) {
+            score += 10;
+        }
+
+        // 6. Relevant skill match (10 pts)
+        if (profile.getSkills() != null && categoryName != null
+                && profile.getSkills().contains(categoryName)) {
+            score += 10;
+        }
+
+        return Math.min(score, 100);
+    }
+
+    private List<String> buildMatchReasons(ServicePartnerProfile profile, double distanceKm,
+                                            String categoryName, long totalBookings) {
+        List<String> reasons = new java.util.ArrayList<>();
+
+        if (profile.isOnline() && profile.isAvailable()) {
+            reasons.add("Available now");
+        } else if (profile.isOnline()) {
+            reasons.add("Online");
+        }
+
+        if (distanceKm <= 1.0) reasons.add("Very close (" + Math.round(distanceKm * 100) / 100.0 + " km)");
+        else if (distanceKm <= 5.0) reasons.add("Nearby (" + Math.round(distanceKm * 100) / 100.0 + " km)");
+
+        if (profile.getSmartServiceScore() >= 4.5) reasons.add("Top rated (" + profile.getSmartServiceScore() + "★)");
+        else if (profile.getSmartServiceScore() >= 4.0) reasons.add("Highly rated (" + profile.getSmartServiceScore() + "★)");
+
+        if (totalBookings >= 100) reasons.add("100+ completed jobs");
+        else if (totalBookings >= 50) reasons.add(totalBookings + " completed jobs");
+
+        if (profile.getKycStatus() == com.fixmate.enums.KycStatus.APPROVED) {
+            reasons.add("KYC Verified");
+        }
+
+        if (profile.getSkills() != null && categoryName != null
+                && profile.getSkills().contains(categoryName)) {
+            reasons.add(categoryName + " specialist");
+        }
+
+        if (profile.isAcceptsEmergency()) {
+            reasons.add("Emergency available");
+        }
+
+        return reasons;
     }
 }

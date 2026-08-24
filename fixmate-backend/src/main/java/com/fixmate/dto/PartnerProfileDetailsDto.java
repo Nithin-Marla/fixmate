@@ -34,5 +34,6 @@ public class PartnerProfileDetailsDto {
     private boolean active;
     private Double distanceKm;
     private Double smartServiceScore;
+    private boolean acceptsEmergency;
     private List<ReviewResponseDto> reviews;
 }

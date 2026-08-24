@@ -16,4 +16,5 @@ public class PartnerProfileRequest {
     private Double hourlyRate;
     private List<String> skills;
     private boolean isAvailable;
+    private boolean acceptsEmergency;
 }

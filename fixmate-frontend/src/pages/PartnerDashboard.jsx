@@ -55,6 +55,7 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
   // Online / location state
   const [online, setOnline] = useState(false);
   const [available, setAvailable] = useState(false);
+  const [acceptsEmergency, setAcceptsEmergency] = useState(false);
   const [liveCoords, setLiveCoords] = useState(null);
   const latestCoords = useRef(null);
   const watchId = useRef(null);
@@ -157,6 +158,19 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
       }
     } catch {
       // No profile yet — the setup form handles this.
+    }
+  };
+
+  const toggleEmergencyAvailability = async () => {
+    try {
+      const newVal = !acceptsEmergency;
+      const { data } = await fetchWithAuth(`/partners/emergency?acceptsEmergency=${newVal}`, { method: 'PATCH' });
+      if (data.success) {
+        setAcceptsEmergency(newVal);
+        setProfile(data.data);
+      }
+    } catch (err) {
+      // ignore
     }
   };
 
@@ -313,6 +327,7 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
         setProfile(data.data);
         setOnline(data.data.online);
         setAvailable(data.data.available);
+        if (data.data.acceptsEmergency !== undefined) setAcceptsEmergency(data.data.acceptsEmergency);
         return true;
       }
       setStatusMsg(data.message || 'Failed to update location');
@@ -625,6 +640,28 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
                 </span>
               )}
             </div>
+            {kycApproved && online && (
+              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={toggleEmergencyAvailability}
+                  className="btn btn-sm"
+                  style={{
+                    fontSize: '0.8rem', padding: '0.25rem 0.75rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: acceptsEmergency ? '1px solid var(--danger)' : '1px solid var(--border)',
+                    background: acceptsEmergency ? 'rgba(239, 68, 68, 0.1)' : 'var(--surface)',
+                    color: acceptsEmergency ? 'var(--danger)' : 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🚨 {acceptsEmergency ? 'Emergency ON' : 'Emergency OFF'}
+                </button>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {acceptsEmergency ? 'Accepting emergency requests' : 'Enable to receive emergency requests'}
+                </span>
+              </div>
+            )}
             {!kycApproved && profile && (
               <p className="form-hint" style={{ marginTop: '0.5rem', color: 'var(--warning-dark)' }}>
                 <ShieldCheck size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> KYC status: {profile.kycStatus || 'PENDING'} — you can go online only after KYC approval.

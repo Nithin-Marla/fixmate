@@ -18,6 +18,8 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String buildingName;
+
     @Column(nullable = false)
     private String street;
 

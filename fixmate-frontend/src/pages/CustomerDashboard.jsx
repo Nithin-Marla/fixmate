@@ -23,7 +23,7 @@ import { SkeletonList } from '../components/ui/Skeleton'
 import './Dashboard.css'
 
 const emptyAddress = {
-  street: '', city: '', state: '', zipCode: '', country: 'India',
+  buildingName: '', street: '', city: '', state: '', zipCode: '', country: 'India',
   latitude: '', longitude: ''
 };
 
@@ -383,6 +383,7 @@ export default function CustomerDashboard() {
       const geo = await reverseGeocode(res.coords.latitude, res.coords.longitude);
       setAddressForm((prev) => ({
         ...prev,
+        buildingName: geo.buildingName || prev.buildingName,
         street: geo.street || prev.street,
         city: geo.city || prev.city,
         state: geo.state || prev.state,
@@ -646,12 +647,25 @@ export default function CustomerDashboard() {
           {p.kycStatus === 'APPROVED' && (
             <BadgeCheck size={16} className="verified-badge" aria-label="KYC verified" />
           )}
+          {p.matchScore != null && p.matchScore > 0 && (
+            <span className="match-score-pill" title={p.matchReasons?.join(', ') || ''}>
+              {p.matchScore}% Match
+            </span>
+          )}
           {p.smartServiceScore != null && (
             <span className="rating-pill">
               <Star size={12} /> {Number(p.smartServiceScore).toFixed(1)}
             </span>
           )}
         </div>
+
+        {p.matchReasons && p.matchReasons.length > 0 && (
+          <div className="partner-match-reasons">
+            {p.matchReasons.slice(0, 3).map((reason, i) => (
+              <span key={i} className="match-reason-tag">✓ {reason}</span>
+            ))}
+          </div>
+        )}
 
         <div className="partner-card-meta">
           <span className="partner-meta-item">
@@ -684,8 +698,11 @@ export default function CustomerDashboard() {
               <span className="dot dot-gray" /> Last active {formatLastActive(p.lastLocationUpdate)}
             </span>
           )}
+          {p.emergencyAvailable && <span className="status-badge status-emergency">🚨 Emergency</span>}
           {p.serviceCategory && <span className="status-badge status-pending">{p.serviceCategory}</span>}
           {p.kycStatus === 'APPROVED' && <span className="status-badge status-kyc">KYC ✓</span>}
+          {p.totalBookings >= 100 && <span className="status-badge status-kyc">🏆 100+ Jobs</span>}
+          {p.smartServiceScore >= 4.5 && <span className="status-badge status-kyc">⭐ Top Rated</span>}
         </div>
       </div>
       <div className="partner-card-actions">
@@ -1014,6 +1031,10 @@ export default function CustomerDashboard() {
 
                   {showAddressForm && (
                     <div className="card" style={{ marginTop: '0.75rem', padding: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">Building Name / No</label>
+                        <input className="form-input" placeholder="e.g. Sai Prithi Cyber Arcade, Flat 4B" value={addressForm.buildingName} onChange={(e) => setAddressForm({ ...addressForm, buildingName: e.target.value })} />
+                      </div>
                       <div className="form-row">
                         <div className="form-group half-width">
                           <label className="form-label">Street</label>

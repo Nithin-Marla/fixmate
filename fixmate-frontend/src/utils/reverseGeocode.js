@@ -55,12 +55,13 @@ function buildSecondaryAddress(addr = {}) {
  * Used to auto-fill address forms (street, city, state, zipCode, country).
  */
 function buildAddressDetails(addr = {}) {
+  const buildingName = addr.building || addr.house_name || addr.amenity || ''
   const street = [addr.house_number, addr.road || addr.pedestrian || addr.footway].filter(Boolean).join(' ')
   const city = addr.city || addr.town || addr.village || addr.municipality || addr.county || ''
   const state = addr.state || ''
   const zipCode = addr.postcode || ''
   const country = addr.country || ''
-  return { street, city, state, zipCode, country }
+  return { buildingName, street, city, state, zipCode, country }
 }
 
 /**

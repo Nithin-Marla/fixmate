@@ -44,4 +44,13 @@ public class NearbyPartnerDto {
 
     /** When the partner's location was last updated. */
     private LocalDateTime lastLocationUpdate;
+
+    /** FixMate smart match score 0–100 calculated by weighted scoring. */
+    private Integer matchScore;
+
+    /** Human-readable reasons why this partner matched (e.g. "Available now", "Nearby", "Verified"). */
+    private List<String> matchReasons;
+
+    /** Whether the partner accepts emergency requests. */
+    private boolean emergencyAvailable;
 }
