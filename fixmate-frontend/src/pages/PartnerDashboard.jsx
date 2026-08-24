@@ -780,16 +780,7 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
               <Navigation size={14} /> {locating ? 'Getting location...' : 'Use my current location'}
             </button>
           </div>
-          <div className="form-row">
-            <div className="form-group half-width">
-              <label className="form-label">Latitude</label>
-              <input type="number" step="any" className="form-input" value={pendingLat} onChange={(e) => setPendingLat(e.target.value)} placeholder="e.g. 17.4500" />
-            </div>
-            <div className="form-group half-width">
-              <label className="form-label">Longitude</label>
-              <input type="number" step="any" className="form-input" value={pendingLon} onChange={(e) => setPendingLon(e.target.value)} placeholder="e.g. 78.3900" />
-            </div>
-          </div>
+
           {locationMsg && (
             <div
               style={{
