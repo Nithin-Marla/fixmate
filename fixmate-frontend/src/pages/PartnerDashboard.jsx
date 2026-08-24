@@ -448,7 +448,7 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
 
   const updateStatus = async (bookingId, newStatus) => {
     try {
-      const { data } = await fetchWithAuth(`/bookings/${bookingId}/status`, {
+      const { data } = await fetchWithAuth(`/bookings/${bookingId}/status?status=${newStatus}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: newStatus }),
       });
