@@ -72,11 +72,14 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [panelPos, setPanelPos] = useState(null);
-  const [highlightBookingId, setHighlightBookingId] = useState(null);
+  const [panelPos, setPanelPos] = useState({ top: 0, right: 0 });
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const prevUnreadRef = useRef(0);
   const bellRef = useRef(null);
   const panelRef = useRef(null);
   const jobsRef = useRef(null);
+  const [highlightBookingId, setHighlightBookingId] = useState(null);
 
   // Close on outside click; re-anchor on resize; dismiss on scroll.
   useEffect(() => {
@@ -242,13 +245,16 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadNotifications = async () => {
+  };  const loadNotifications = async (showToast = false) => {
     try {
       const { data } = await fetchWithAuth('/notifications');
       if (data.success) {
         setNotifications(data.data);
+        if (showToast && data.data.length > 0) {
+          const latest = data.data[0];
+          setToastMessage({ title: latest.title, message: latest.message });
+          setTimeout(() => setToastMessage(null), 6000);
+        }
       }
     } catch (err) {
       console.error('Failed to load notifications', err.message);
@@ -259,10 +265,17 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
     try {
       const { data } = await fetchWithAuth('/notifications/unread-count');
       if (data.success) {
-        setUnreadCount(Number(data.data?.count) || 0);
+        const newCount = Number(data.data?.count) || 0;
+        if (newCount > prevUnreadRef.current) {
+          // A new notification has arrived
+          loadBookings();
+          loadNotifications(true);
+        }
+        prevUnreadRef.current = newCount;
+        setUnreadCount(newCount);
       }
     } catch {
-      // Silent — badge polling must never interrupt the dashboard.
+      // Silent - badge polling must never interrupt the dashboard.
     }
   };
 
@@ -1053,6 +1066,23 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
           )}
         </div>,
         document.body
+      )}
+
+      {/* ============ Toast Notification ============ */}
+      {toastMessage && (
+        <div 
+          className="fixed bottom-4 right-4 bg-primary text-white p-4 rounded-xl shadow-2xl flex items-center gap-3 z-[9999] animate-bounce-in max-w-xs"
+          onClick={() => setToastMessage(null)}
+          style={{ cursor: 'pointer' }}
+        >
+          <div className="flex-1">
+            <h4 className="font-bold text-sm mb-1">{toastMessage.title}</h4>
+            <p className="text-xs opacity-90 leading-tight">{toastMessage.message}</p>
+          </div>
+          <button className="opacity-70 hover:opacity-100" onClick={(e) => { e.stopPropagation(); setToastMessage(null); }}>
+            ✕
+          </button>
+        </div>
       )}
     </div>
   )
