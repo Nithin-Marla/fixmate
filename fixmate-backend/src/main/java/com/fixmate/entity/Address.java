@@ -38,6 +38,9 @@ public class Address {
     @Column(nullable = false)
     private boolean isDefault;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isDeleted = false;
+
     private Double latitude;
     private Double longitude;
 

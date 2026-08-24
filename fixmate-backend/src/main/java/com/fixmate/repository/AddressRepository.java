@@ -10,6 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface AddressRepository extends JpaRepository<Address, Long> {
-    List<Address> findByUser(User user);
-    Optional<Address> findByUserAndIsDefaultTrue(User user);
+    List<Address> findByUserAndIsDeletedFalse(User user);
+    Optional<Address> findByUserAndIsDefaultTrueAndIsDeletedFalse(User user);
 }

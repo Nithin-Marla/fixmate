@@ -39,7 +39,7 @@ public class AddressService {
     }
 
     public List<AddressDto> getUserAddresses(User currentUser) {
-        return addressRepository.findByUser(currentUser)
+        return addressRepository.findByUserAndIsDeletedFalse(currentUser)
                 .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -78,12 +78,13 @@ public class AddressService {
         if (!address.getUser().getId().equals(currentUser.getId())) {
             throw new RuntimeException("Unauthorized to delete this address");
         }
-
-        addressRepository.delete(address);
+        address.setDeleted(true);
+        address.setDefault(false);
+        addressRepository.save(address);
     }
 
     private void resetDefaultAddresses(User currentUser) {
-        List<Address> addresses = addressRepository.findByUser(currentUser);
+        List<Address> addresses = addressRepository.findByUserAndIsDeletedFalse(currentUser);
         for (Address addr : addresses) {
             if (addr.isDefault()) {
                 addr.setDefault(false);
