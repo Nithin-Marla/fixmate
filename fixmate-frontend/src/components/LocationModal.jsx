@@ -58,8 +58,19 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
   const [detecting, setDetecting] = useState(false)
   const [error, setError] = useState('')
   const [recentLocations, setRecentLocations] = useState([])
+  const [internalAddresses, setInternalAddresses] = useState([])
   const searchTimeoutRef = useRef(null)
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (open) {
+      fetchWithAuth('/addresses')
+        .then(res => {
+          if (res.data?.success) setInternalAddresses(res.data.data);
+        })
+        .catch(() => setInternalAddresses([]));
+    }
+  }, [open])
 
   useEffect(() => {
     if (open) {
@@ -133,6 +144,8 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
   }, [onSelect, onClose])
 
   if (!open) return null
+
+  const displayAddresses = addresses || internalAddresses;
 
   return (
     <div className="location-modal-overlay" onClick={mapOpen ? undefined : onClose}>
@@ -233,10 +246,10 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
             </div>
           )}
 
-          {!query && addresses && addresses.length > 0 && (
+          {!query && displayAddresses && displayAddresses.length > 0 && (
             <div className="location-section">
               <div className="location-section-title"><MapPin size={14} /> Saved addresses</div>
-              {addresses.map((addr) => (
+              {displayAddresses.map((addr) => (
                 <div key={`saved-${addr.id}`} className="location-option" style={{ display: 'flex', alignItems: 'center' }}>
                   <button 
                     className="location-option-content"
@@ -270,8 +283,9 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
                       if (!window.confirm("Are you sure you want to delete this address?")) return;
                       try {
                         const { data } = await fetchWithAuth(`/addresses/${addr.id}`, { method: 'DELETE' });
-                        if (data.success && onAddressDeleted) {
-                          onAddressDeleted(addr.id);
+                        if (data.success) {
+                          if (onAddressDeleted) onAddressDeleted(addr.id);
+                          setInternalAddresses(prev => prev.filter(a => String(a.id) !== String(addr.id)));
                         }
                       } catch (err) {
                         alert(err.message || 'Failed to delete address');
