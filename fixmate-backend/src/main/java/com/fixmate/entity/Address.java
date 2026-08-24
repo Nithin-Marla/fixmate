@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
 
 @Data
 @Builder
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Entity
 @Table(name = "addresses")
+@SQLDelete(sql = "UPDATE addresses SET is_deleted = true WHERE id = ?")
 public class Address {
 
     @Id
