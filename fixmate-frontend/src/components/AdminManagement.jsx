@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Users, Briefcase, FileCheck2, Shield, Clock, Eye,
-  CheckCircle2, XCircle, Search, RefreshCw, ChevronDown, ChevronUp, ScrollText
+  CheckCircle2, XCircle, Search, RefreshCw, ChevronDown, ChevronUp, ScrollText, Trash2
 } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import { SkeletonList } from './ui/Skeleton'
@@ -25,6 +25,7 @@ export default function AdminManagement({ initialTab }) {
   const [kycActionLoading, setKycActionLoading] = useState(null)
   const [userActionLoading, setUserActionLoading] = useState(null)
   const [trackingBookingId, setTrackingBookingId] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // { id, name }
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -79,6 +80,23 @@ export default function AdminManagement({ initialTab }) {
       }
     } catch (err) {
       alert(err.message || 'Failed to update user status')
+    } finally {
+      setUserActionLoading(null)
+    }
+  }
+
+  const handleDeleteUser = async (userId) => {
+    setUserActionLoading(userId)
+    try {
+      const { data: res } = await fetchWithAuth(`/admin/users/${userId}`, {
+        method: 'DELETE'
+      })
+      if (res.success) {
+        setData(prev => prev.filter(u => u.id !== userId))
+        setDeleteConfirm(null)
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to delete user')
     } finally {
       setUserActionLoading(null)
     }
@@ -208,13 +226,22 @@ export default function AdminManagement({ initialTab }) {
                       <td><span className={`status-badge status-${item.isActive !== false ? 'accepted' : 'cancelled'}`}>Customer</span></td>
                       <td className="text-muted">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
                       <td>
-                        <button
-                          className={`btn ${item.isActive !== false ? 'btn-danger' : 'btn-success'} btn-sm`}
-                          onClick={() => handleToggleUserStatus(item.id, item.isActive === false)}
-                          disabled={userActionLoading === item.id}
-                        >
-                          {item.isActive !== false ? 'Suspend' : 'Activate'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className={`btn ${item.isActive !== false ? 'btn-danger' : 'btn-success'} btn-sm`}
+                            onClick={() => handleToggleUserStatus(item.id, item.isActive === false)}
+                            disabled={userActionLoading === item.id}
+                          >
+                            {item.isActive !== false ? 'Suspend' : 'Activate'}
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => setDeleteConfirm({ id: item.id, name: `${item.firstName} ${item.lastName}` })}
+                            disabled={userActionLoading === item.id}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </>
                   )}
@@ -231,13 +258,22 @@ export default function AdminManagement({ initialTab }) {
                       <td>{item.isOnline ? <span className="dot dot-green" /> : <span className="dot dot-gray" />}</td>
                       <td className="text-secondary">{item.averageRating != null ? Number(item.averageRating).toFixed(1) : '—'}</td>
                       <td>
-                        <button
-                          className={`btn ${item.isActive !== false ? 'btn-danger' : 'btn-success'} btn-sm`}
-                          onClick={() => handleToggleUserStatus(item.id, item.isActive === false)}
-                          disabled={userActionLoading === item.id}
-                        >
-                          {item.isActive !== false ? 'Suspend' : 'Activate'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className={`btn ${item.isActive !== false ? 'btn-danger' : 'btn-success'} btn-sm`}
+                            onClick={() => handleToggleUserStatus(item.id, item.isActive === false)}
+                            disabled={userActionLoading === item.id}
+                          >
+                            {item.isActive !== false ? 'Suspend' : 'Activate'}
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => setDeleteConfirm({ id: item.id, name: `${item.firstName} ${item.lastName}` })}
+                            disabled={userActionLoading === item.id}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </>
                   )}
@@ -310,6 +346,42 @@ export default function AdminManagement({ initialTab }) {
             </div>
             <div className="flex-1 min-h-[500px] relative">
               <LiveTrackingMap bookingId={trackingBookingId} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800 m-0">Delete User</h3>
+                <p className="text-sm text-gray-500 m-0">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? This will permanently remove their account and all associated data.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={userActionLoading === deleteConfirm.id}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => handleDeleteUser(deleteConfirm.id)}
+                disabled={userActionLoading === deleteConfirm.id}
+              >
+                {userActionLoading === deleteConfirm.id ? 'Deleting...' : 'Delete User'}
+              </button>
             </div>
           </div>
         </div>

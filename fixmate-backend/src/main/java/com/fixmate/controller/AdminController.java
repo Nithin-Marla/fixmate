@@ -91,4 +91,13 @@ public class AdminController {
         List<AuditLog> logs = adminService.getAuditLogs(page, size);
         return ResponseEntity.ok(ApiResponse.success("Audit logs fetched", logs));
     }
+
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @AuthenticationPrincipal User admin,
+            @PathVariable Long userId
+    ) {
+        adminService.deleteUser(admin, userId);
+        return ResponseEntity.ok(ApiResponse.success("User deleted successfully", null));
+    }
 }

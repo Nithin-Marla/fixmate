@@ -178,6 +178,32 @@ public class AdminService {
         return auditLogService.getRecentLogs(page, size).getContent();
     }
 
+    /**
+     * Delete a user and all their related data.
+     */
+    public void deleteUser(User admin, Long userId) {
+        if (admin.getRole() != Role.ROLE_ADMIN) {
+            throw new RuntimeException("Access Denied: Only administrators can delete users.");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Prevent admin from deleting themselves
+        if (user.getId().equals(admin.getId())) {
+            throw new RuntimeException("Cannot delete your own admin account.");
+        }
+        
+        // Log the deletion before removing
+        auditLogService.log("USER_DELETED", "User", user.getId(),
+                "Admin deleted user " + user.getEmail() + " (" + user.getRole().name() + ")", admin);
+        
+        // Delete all dependent records first
+        userRepository.deleteUserDependents(userId);
+        
+        // Delete the user
+        userRepository.deleteById(userId);
+    }
+
     private AdminUserDto mapToUserDto(User user) {
         AdminUserDto.AdminUserDtoBuilder b = AdminUserDto.builder()
                 .id(user.getId())
