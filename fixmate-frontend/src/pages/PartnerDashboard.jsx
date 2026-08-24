@@ -85,7 +85,10 @@ export default function PartnerDashboard({ activeSection, onSectionChange }) {
       if (bellRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
       setShowNotifications(false);
     };
-    const onScroll = () => setShowNotifications(false);
+    const onScroll = (e) => {
+      if (panelRef.current?.contains(e.target)) return;
+      setShowNotifications(false);
+    };
     const onResize = () => {
       if (bellRef.current) {
         const r = bellRef.current.getBoundingClientRect();
