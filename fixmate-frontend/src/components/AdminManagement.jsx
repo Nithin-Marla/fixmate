@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { fetchWithAuth } from '../api'
 import { SkeletonList } from './ui/Skeleton'
+import LiveTrackingMap from './LiveTrackingMap'
 import './AdminManagement.css'
 
 const TABS = [
@@ -22,6 +23,8 @@ export default function AdminManagement({ initialTab }) {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [kycActionLoading, setKycActionLoading] = useState(null)
+  const [userActionLoading, setUserActionLoading] = useState(null)
+  const [trackingBookingId, setTrackingBookingId] = useState(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -61,6 +64,23 @@ export default function AdminManagement({ initialTab }) {
       alert(err.message)
     } finally {
       setKycActionLoading(null)
+    }
+  }
+
+  const handleToggleUserStatus = async (userId, activate) => {
+    setUserActionLoading(userId)
+    try {
+      const { data: res } = await fetchWithAuth(`/admin/users/${userId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: activate ? 'true' : 'false' })
+      })
+      if (res.success) {
+        setData(prev => prev.map(u => u.id === userId ? { ...u, isActive: activate } : u))
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to update user status')
+    } finally {
+      setUserActionLoading(null)
     }
   }
 
@@ -157,17 +177,17 @@ export default function AdminManagement({ initialTab }) {
               <tr>
                 {activeTab === 'customers' && (
                   <>
-                    <th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th>
+                    <th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th><th>Action</th>
                   </>
                 )}
                 {activeTab === 'partners' && (
                   <>
-                    <th>Name</th><th>Email</th><th>Skills</th><th>KYC</th><th>Online</th><th>Rating</th>
+                    <th>Name</th><th>Email</th><th>Skills</th><th>KYC</th><th>Online</th><th>Rating</th><th>Action</th>
                   </>
                 )}
                 {activeTab === 'bookings' && (
                   <>
-                    <th>ID</th><th>Customer</th><th>Partner</th><th>Service</th><th>Status</th><th>Amount</th><th>Date</th>
+                    <th>ID</th><th>Customer</th><th>Partner</th><th>Service</th><th>Status</th><th>Amount</th><th>Date</th><th>Action</th>
                   </>
                 )}
                 {activeTab === 'kyc' && (
@@ -185,8 +205,17 @@ export default function AdminManagement({ initialTab }) {
                       <td className="font-semibold">{item.firstName} {item.lastName}</td>
                       <td className="text-secondary">{item.email}</td>
                       <td>{item.phone}</td>
-                      <td><span className="status-badge status-accepted">Customer</span></td>
+                      <td><span className={`status-badge status-${item.isActive !== false ? 'accepted' : 'cancelled'}`}>Customer</span></td>
                       <td className="text-muted">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
+                      <td>
+                        <button
+                          className={`btn ${item.isActive !== false ? 'btn-danger' : 'btn-success'} btn-sm`}
+                          onClick={() => handleToggleUserStatus(item.id, item.isActive === false)}
+                          disabled={userActionLoading === item.id}
+                        >
+                          {item.isActive !== false ? 'Suspend' : 'Activate'}
+                        </button>
+                      </td>
                     </>
                   )}
                   {activeTab === 'partners' && (
@@ -201,6 +230,15 @@ export default function AdminManagement({ initialTab }) {
                       </td>
                       <td>{item.isOnline ? <span className="dot dot-green" /> : <span className="dot dot-gray" />}</td>
                       <td className="text-secondary">{item.averageRating != null ? Number(item.averageRating).toFixed(1) : '—'}</td>
+                      <td>
+                        <button
+                          className={`btn ${item.isActive !== false ? 'btn-danger' : 'btn-success'} btn-sm`}
+                          onClick={() => handleToggleUserStatus(item.id, item.isActive === false)}
+                          disabled={userActionLoading === item.id}
+                        >
+                          {item.isActive !== false ? 'Suspend' : 'Activate'}
+                        </button>
+                      </td>
                     </>
                   )}
                   {activeTab === 'bookings' && (
@@ -212,6 +250,16 @@ export default function AdminManagement({ initialTab }) {
                       <td><span className={`status-badge status-${item.status === 'IN_PROGRESS' ? 'in_progress' : item.status.toLowerCase()}`}>{item.status}</span></td>
                       <td className="text-secondary">{item.totalAmount != null ? `₹${Number(item.totalAmount).toFixed(2)}` : '—'}</td>
                       <td className="text-muted">{item.scheduledDate ? new Date(item.scheduledDate).toLocaleDateString() : '—'}</td>
+                      <td>
+                        {item.status === 'IN_PROGRESS' && (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => setTrackingBookingId(item.id)}
+                          >
+                            Track
+                          </button>
+                        )}
+                      </td>
                     </>
                   )}
                   {activeTab === 'kyc' && (
@@ -244,6 +292,26 @@ export default function AdminManagement({ initialTab }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Live Tracking Modal */}
+      {trackingBookingId && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-semibold text-gray-800 m-0">Live Tracking (Booking #{trackingBookingId})</h3>
+              <button
+                onClick={() => setTrackingBookingId(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <XCircle size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-[500px] relative">
+              <LiveTrackingMap bookingId={trackingBookingId} />
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -144,6 +144,34 @@ public class AdminService {
     }
 
     /**
+     * Toggle user active/suspend status.
+     */
+    public AdminUserDto toggleUserStatus(User admin, Long userId, boolean active) {
+        if (admin.getRole() != Role.ROLE_ADMIN) {
+            throw new RuntimeException("Access Denied");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setActive(active);
+        
+        // If a partner is suspended, take them offline
+        if (!active && user.getRole() == Role.ROLE_SERVICE_PARTNER) {
+            var profile = partnerProfileRepository.findByUser(user);
+            if (profile.isPresent()) {
+                profile.get().setOnline(false);
+                partnerProfileRepository.save(profile.get());
+            }
+        }
+        
+        userRepository.save(user);
+        auditLogService.log(active ? "USER_ACTIVATED" : "USER_SUSPENDED", "User", user.getId(),
+                "Admin " + (active ? "activated" : "suspended") + " user " + user.getEmail(), admin);
+        
+        return mapToUserDto(user);
+    }
+
+    /**
      * Get recent audit logs.
      */
     public List<com.fixmate.entity.AuditLog> getAuditLogs(int page, int size) {
@@ -158,6 +186,7 @@ public class AdminService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .role(user.getRole().name())
+                .isActive(user.isActive())
                 .createdAt(null); // User entity doesn't have createdAt yet
 
         // For partners, add KYC and profile info

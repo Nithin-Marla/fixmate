@@ -29,6 +29,12 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Value("${fixmate.admin.email:admin@fixmate.com}")
+    private String adminEmail;
+
+    @org.springframework.beans.factory.annotation.Value("${fixmate.admin.password:Admin@123}")
+    private String adminPassword;
+
     @Override
     public void run(String... args) {
         seedCategories();
@@ -83,19 +89,19 @@ public class DataSeeder implements CommandLineRunner {
     // =========================================================================
 
     private void seedAdmin() {
-        if (userRepository.findByEmail("admin@fixmate.com").isPresent()) {
+        if (userRepository.findByEmail(adminEmail).isPresent()) {
             return;
         }
 
         User admin = User.builder()
                 .firstName("FixMate")
                 .lastName("Admin")
-                .email("admin@fixmate.com")
-                .password(passwordEncoder.encode("Admin@123"))
+                .email(adminEmail)
+                .password(passwordEncoder.encode(adminPassword))
                 .phone("9000000001")
                 .role(Role.ROLE_ADMIN)
                 .build();
         userRepository.save(admin);
-        System.out.println("Seeded demo admin -> admin@fixmate.com / Admin@123");
+        System.out.println("Seeded demo admin -> " + adminEmail + " / [HIDDEN]");
     }
 }

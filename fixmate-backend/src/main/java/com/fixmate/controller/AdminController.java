@@ -39,6 +39,17 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("KYC status updated to " + status, profile));
     }
 
+    @PatchMapping("/users/{userId}/status")
+    public ResponseEntity<ApiResponse<AdminUserDto>> toggleUserStatus(
+            @AuthenticationPrincipal User admin,
+            @PathVariable Long userId,
+            @RequestBody UpdateBookingStatusRequest request // reusing this DTO since it just has a status string
+    ) {
+        boolean active = Boolean.parseBoolean(request.getStatus());
+        AdminUserDto user = adminService.toggleUserStatus(admin, userId, active);
+        return ResponseEntity.ok(ApiResponse.success("User account " + (active ? "activated" : "suspended"), user));
+    }
+
     @GetMapping("/customers")
     public ResponseEntity<ApiResponse<List<AdminUserDto>>> listCustomers(
             @AuthenticationPrincipal User admin

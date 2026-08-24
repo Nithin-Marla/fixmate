@@ -83,8 +83,14 @@ public class User implements UserDetails {
         return true; 
     }
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
+    private boolean isActive = true;
+
+    // ...UserDetails methods...
+
     @Override
     public boolean isEnabled() {
-        return true;
+        return isActive;
     }
 }

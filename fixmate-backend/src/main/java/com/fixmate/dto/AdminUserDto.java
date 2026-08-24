@@ -22,5 +22,6 @@ public class AdminUserDto {
     private Integer totalBookings;
     private Double averageRating;
     private boolean isOnline;
+    private boolean isActive;
     private LocalDateTime createdAt;
 }
