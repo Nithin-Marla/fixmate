@@ -3,6 +3,7 @@ import { MapPin, Search, Clock, X, Loader2, AlertTriangle, Locate, ChevronRight,
 import { getBrowserPosition } from '../utils/location'
 import { reverseGeocode, forwardGeocode } from '../utils/reverseGeocode'
 import MapSelector from './MapSelector'
+import { fetchWithAuth } from '../api'
 import './LocationModal.css'
 
 const STORAGE_KEY = 'fixmate_selected_location'
@@ -49,7 +50,7 @@ export function clearStoredLocation() {
  * LocationModal — professional location selector.
  * Props: open, onClose, onSelect({latitude, longitude, name, formattedAddress?}), currentLocation
  */
-export default function LocationModal({ open, onClose, onSelect, currentLocation }) {
+export default function LocationModal({ open, onClose, onSelect, currentLocation, addresses, onAddressDeleted }) {
   const [mapOpen, setMapOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -229,6 +230,58 @@ export default function LocationModal({ open, onClose, onSelect, currentLocation
             <div className="location-searching">
               <Loader2 size={16} className="spin" />
               <span>Searching...</span>
+            </div>
+          )}
+
+          {!query && addresses && addresses.length > 0 && (
+            <div className="location-section">
+              <div className="location-section-title"><MapPin size={14} /> Saved addresses</div>
+              {addresses.map((addr) => (
+                <div key={`saved-${addr.id}`} className="location-option" style={{ display: 'flex', alignItems: 'center' }}>
+                  <button 
+                    className="location-option-content"
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                    onClick={() => {
+                      onSelect({
+                        latitude: addr.latitude,
+                        longitude: addr.longitude,
+                        name: addr.street,
+                        formattedAddress: `${addr.buildingName ? addr.buildingName + ', ' : ''}${addr.street}, ${addr.city}, ${addr.state} - ${addr.zipCode}`
+                      });
+                      onClose();
+                    }}
+                  >
+                    <div className="location-option-icon location-option-icon-recent"><MapPin size={14} /></div>
+                    <div className="location-option-text">
+                      <div className="location-option-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {addr.street}
+                        {addr.isDefault && <span className="badge badge-accent badge-sm text-[10px] h-4 leading-[14px]">Default</span>}
+                      </div>
+                      <div className="location-option-subtitle">
+                        {addr.buildingName ? `${addr.buildingName}, ` : ''}{addr.city}, {addr.state} - {addr.zipCode}
+                      </div>
+                    </div>
+                  </button>
+                  <button 
+                    className="btn btn-ghost btn-sm text-danger hover:bg-danger/10" 
+                    style={{ padding: '0.25rem', height: 'auto', minHeight: 0 }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!window.confirm("Are you sure you want to delete this address?")) return;
+                      try {
+                        const { data } = await fetchWithAuth(`/addresses/${addr.id}`, { method: 'DELETE' });
+                        if (data.success && onAddressDeleted) {
+                          onAddressDeleted(addr.id);
+                        }
+                      } catch (err) {
+                        alert(err.message || 'Failed to delete address');
+                      }
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 

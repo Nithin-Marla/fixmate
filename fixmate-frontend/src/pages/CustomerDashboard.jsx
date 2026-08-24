@@ -1488,6 +1488,8 @@ export default function CustomerDashboard() {
           setBookingLocationModalOpen(false)
         }}
         currentLocation={customerLocation}
+        addresses={addresses}
+        onAddressDeleted={handleAddressDeleted}
       />
 
       {/* ============ Saved Addresses Modal ============ */}
