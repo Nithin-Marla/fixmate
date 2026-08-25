@@ -56,11 +56,18 @@
 /* ============================================================
    Hero Section
    ============================================================ */
+.hero-wrapper {
+  padding: 1.5rem 1.5rem 0;
+  background-color: var(--neutral-0);
+}
+
 .hero-section {
   position: relative;
   padding: 8rem 0 6rem;
   text-align: center;
   overflow: hidden;
+  background-color: var(--primary-soft);
+  border-radius: 2rem;
 }
 
 .hero-content {
@@ -145,7 +152,7 @@
 .blob-1 {
   width: 400px;
   height: 400px;
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.1);
   top: -100px;
   left: -100px;
 }
@@ -153,7 +160,7 @@
 .blob-2 {
   width: 500px;
   height: 500px;
-  background: rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.08);
   bottom: -200px;
   right: -100px;
   animation-delay: -5s;

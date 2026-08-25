@@ -23,30 +23,32 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="hero-section">
-        <div className="landing-container hero-content">
-          <div className="hero-badge">
-            <Zap size={14} className="badge-icon" />
-            <span>Fast, Reliable Home Services</span>
+      <div className="hero-wrapper">
+        <section className="hero-section">
+          <div className="landing-container hero-content">
+            <div className="hero-badge">
+              <Zap size={14} className="badge-icon" />
+              <span>Fast, Reliable Home Services</span>
+            </div>
+            <h1 className="hero-title">
+              Your Home Needs, <br/>
+              <span className="gradient-text">Expertly Fixed.</span>
+            </h1>
+            <p className="hero-subtitle">
+              Connect with top-rated professionals for plumbing, electrical, cleaning, and more. 
+              Book instantly and track your service partner in real-time.
+            </p>
+            <div className="hero-cta-group">
+              <Link to="/register" className="btn btn-primary btn-lg shadow-hover">Get Started Now</Link>
+              <Link to="/login" className="btn btn-secondary btn-lg">Partner With Us</Link>
+            </div>
           </div>
-          <h1 className="hero-title">
-            Your Home Needs, <br/>
-            <span className="gradient-text">Expertly Fixed.</span>
-          </h1>
-          <p className="hero-subtitle">
-            Connect with top-rated professionals for plumbing, electrical, cleaning, and more. 
-            Book instantly and track your service partner in real-time.
-          </p>
-          <div className="hero-cta-group">
-            <Link to="/register" className="btn btn-primary btn-lg shadow-hover">Get Started Now</Link>
-            <Link to="/login" className="btn btn-secondary btn-lg">Partner With Us</Link>
-          </div>
-        </div>
-        
-        {/* Abstract Background Elements */}
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-      </section>
+          
+          {/* Abstract Background Elements */}
+          <div className="blob blob-1"></div>
+          <div className="blob blob-2"></div>
+        </section>
+      </div>
 
       {/* How it Works Section */}
       <section className="features-section">
