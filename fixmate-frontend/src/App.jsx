@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import CustomerDashboard from './pages/CustomerDashboard'
 import PartnerDashboard from './pages/PartnerDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import LandingPage from './pages/LandingPage'
 
 function App() {
   const [partnerSection, setPartnerSection] = useState('dashboard')
@@ -23,7 +24,7 @@ function App() {
     <Router>
       <div className="page-wrapper">
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
