@@ -29,10 +29,10 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @org.springframework.beans.factory.annotation.Value("${fixmate.admin.email:admin@fixmate.com}")
+    @org.springframework.beans.factory.annotation.Value("${fixmate.admin.email}")
     private String adminEmail;
 
-    @org.springframework.beans.factory.annotation.Value("${fixmate.admin.password:Admin@123}")
+    @org.springframework.beans.factory.annotation.Value("${fixmate.admin.password}")
     private String adminPassword;
 
     @Override
